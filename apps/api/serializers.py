@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from apps.customers.models import Customer
 from apps.products.models import Product
+from apps.warehouses.models import Warehouse
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -64,3 +65,25 @@ class ProductSerializer(serializers.ModelSerializer):
                 "Product name must not be empty."
             )
         return value
+
+class WarehouseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Warehouse
+        fields = [
+            "id",
+            "code",
+            "name",
+            "location",
+            "active",
+            "created_at",
+            "modified_at",
+        ]
+        read_only_fields = [
+            "id",
+            "code",
+            "name",
+            "location",
+            "active",
+            "created_at",
+            "modified_at",
+        ]

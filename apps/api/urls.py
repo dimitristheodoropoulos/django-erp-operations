@@ -8,6 +8,10 @@ from apps.api.product_views import (
     ProductDetailView,
     ProductListCreateView,
 )
+from apps.api.warehouse_views import (
+    WarehouseDetailView,
+    WarehouseListView,
+)
 from apps.api.views import ApiRootView
 
 
@@ -32,5 +36,15 @@ urlpatterns = [
         "products/<uuid:product_id>/",
         ProductDetailView.as_view(),
         name="product-detail",
+    ),
+    path(
+        "warehouses/",
+        WarehouseListView.as_view(),
+        name="warehouse-list",
+    ),
+    path(
+        "warehouses/<uuid:warehouse_id>/",
+        WarehouseDetailView.as_view(),
+        name="warehouse-detail",
     ),
 ]
