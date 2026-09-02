@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.customers.models import Customer
 from apps.products.models import Product
 from apps.warehouses.models import Warehouse
+from apps.inventory.models import StockItem
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -66,6 +67,7 @@ class ProductSerializer(serializers.ModelSerializer):
             )
         return value
 
+
 class WarehouseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Warehouse
@@ -84,6 +86,31 @@ class WarehouseSerializer(serializers.ModelSerializer):
             "name",
             "location",
             "active",
+            "created_at",
+            "modified_at",
+        ]
+
+
+class InventorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StockItem
+        fields = [
+            "id",
+            "product",
+            "warehouse",
+            "quantity",
+            "reserved_quantity",
+            "available_quantity",
+            "created_at",
+            "modified_at",
+        ]
+        read_only_fields = [
+            "id",
+            "product",
+            "warehouse",
+            "quantity",
+            "reserved_quantity",
+            "available_quantity",
             "created_at",
             "modified_at",
         ]

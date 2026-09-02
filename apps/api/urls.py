@@ -12,6 +12,10 @@ from apps.api.warehouse_views import (
     WarehouseDetailView,
     WarehouseListView,
 )
+from apps.api.inventory_views import (
+    InventoryDetailView,
+    InventoryListView,
+)
 from apps.api.views import ApiRootView
 
 
@@ -46,5 +50,15 @@ urlpatterns = [
         "warehouses/<uuid:warehouse_id>/",
         WarehouseDetailView.as_view(),
         name="warehouse-detail",
+    ),
+    path(
+        "inventory/",
+        InventoryListView.as_view(),
+        name="inventory-list",
+    ),
+    path(
+        "inventory/<uuid:inventory_id>/",
+        InventoryDetailView.as_view(),
+        name="inventory-detail",
     ),
 ]
