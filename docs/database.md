@@ -130,9 +130,9 @@ Fields:
 | Field       | Type                     | Nullable | Constraints                    |
 | ----------- | ------------------------ | -------: | ------------------------------ |
 | id          | UUID                     |       No | Primary key                    |
-| name        | VARCHAR                  |       No | Non-empty                      |
-| email       | VARCHAR                  |      Yes | Validated at application level |
-| phone       | VARCHAR                  |      Yes | Validated at application level |
+| name        | VARCHAR(255)             |       No | Non-empty                      |
+| email       | VARCHAR(254)             |      Yes | Validated at application level |
+| phone       | VARCHAR(32)              |      Yes | Validated at application level |
 | active      | BOOLEAN                  |       No | Default `true`                 |
 | created_at  | TIMESTAMP WITH TIME ZONE |       No | Set on creation                |
 | modified_at | TIMESTAMP WITH TIME ZONE |       No | Updated on modification        |
@@ -170,8 +170,8 @@ Fields:
 | Field       | Type                     | Nullable | Constraints             |
 | ----------- | ------------------------ | -------: | ----------------------- |
 | id          | UUID                     |       No | Primary key             |
-| sku         | VARCHAR                  |       No | Unique, non-empty       |
-| name        | VARCHAR                  |       No | Non-empty               |
+| sku         | VARCHAR(64)              |       No | Unique, non-empty       |
+| name        | VARCHAR(255)             |       No | Non-empty               |
 | description | TEXT                     |      Yes |                         |
 | unit_price  | NUMERIC(12,2)            |       No | `>= 0`                  |
 | active      | BOOLEAN                  |       No | Default `true`          |
@@ -226,9 +226,9 @@ Fields:
 | Field       | Type                     | Nullable | Constraints             |
 | ----------- | ------------------------ | -------: | ----------------------- |
 | id          | UUID                     |       No | Primary key             |
-| code        | VARCHAR                  |       No | Unique, non-empty       |
-| name        | VARCHAR                  |       No | Non-empty               |
-| location    | VARCHAR                  |      Yes |                         |
+| code        | VARCHAR(64)              |       No | Unique, non-empty       |
+| name        | VARCHAR(255)             |       No | Non-empty               |
+| location    | VARCHAR(255)             |      Yes |                         |
 | active      | BOOLEAN                  |       No | Default `true`          |
 | created_at  | TIMESTAMP WITH TIME ZONE |       No | Set on creation         |
 | modified_at | TIMESTAMP WITH TIME ZONE |       No | Updated on modification |
@@ -356,7 +356,7 @@ Fields:
 | ----------- | -------------------------- | -------: | --------------------- |
 | id          | UUID                       |       No | Primary key           |
 | customer_id | UUID                       |       No | FK → customers.id     |
-| status      | VARCHAR / ENUM-like choice |       No | Valid lifecycle state |
+| status      | VARCHAR(32)                |       No | Valid lifecycle state |
 | created_at  | TIMESTAMP WITH TIME ZONE   |       No |                       |
 | modified_at | TIMESTAMP WITH TIME ZONE   |       No |                       |
 
@@ -373,6 +373,12 @@ CANCELLED
 The database must reject unknown status values.
 
 The implementation may use Django `TextChoices` or an equivalent explicit representation, with database-level enforcement where practical.
+
+The initial order status is `DRAFT`.
+
+This is an application/model initialization default rather than a required
+PostgreSQL column `DEFAULT`. Order lifecycle transitions remain controlled by
+application services.
 
 ---
 
@@ -517,11 +523,11 @@ Fields:
 | Field             | Type                     | Nullable | Constraints           |
 | ----------------- | ------------------------ | -------: | --------------------- |
 | id                | UUID                     |       No | Primary key           |
-| external_event_id | VARCHAR                  |       No | Unique                |
-| event_type        | VARCHAR                  |       No | Non-empty             |
+| external_event_id | VARCHAR(255)             |       No | Unique                |
+| event_type        | VARCHAR(64)              |       No | Non-empty             |
 | order_id          | UUID                     |      Yes | FK → orders.id        |
 | payment_amount    | NUMERIC(12,2)            |      Yes | `>= 0`                |
-| processing_status | VARCHAR                  |       No | Explicit status       |
+| processing_status | VARCHAR(32)              |       No | Explicit status       |
 | received_at       | TIMESTAMP WITH TIME ZONE |       No |                       |
 | processed_at      | TIMESTAMP WITH TIME ZONE |      Yes |                       |
 | error_message     | TEXT                     |      Yes | Diagnostic, sanitized |
@@ -584,6 +590,12 @@ RECEIVED
 PROCESSED
 FAILED
 ```
+
+The initial processing status is `RECEIVED`.
+
+This is an application/model initialization default rather than a required
+PostgreSQL column `DEFAULT`. Processing state transitions remain controlled by
+the integration application service.
 
 Meaning:
 
