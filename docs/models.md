@@ -5,7 +5,7 @@
 **Version:** 1.0
 **Status:** Approved
 **Requirements Baseline:** `14db353`
-**Database Design Baseline:** `b1bfb88`
+**Database Design Baseline:** `c5a9e31`
 **Last Updated:** 2026-09-02
 
 ---
