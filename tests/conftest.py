@@ -61,3 +61,43 @@ def order_line(db, order, product):
         quantity=25,
         unit_price="10.00",
     )
+
+@pytest.fixture
+def authenticated_api_client(db):
+    from django.contrib.auth.models import Group, User
+    from rest_framework.authtoken.models import Token
+    from rest_framework.test import APIClient
+
+    def make_client(role_name):
+        user = User.objects.create_user(
+            username=f"api_user_{role_name.lower()}",
+            password="test-password",
+        )
+
+        role = Group.objects.get(name=role_name)
+        user.groups.add(role)
+
+        token = Token.objects.create(user=user)
+
+        client = APIClient()
+        client.credentials(
+            HTTP_AUTHORIZATION=f"Token {token.key}"
+        )
+        return client
+
+    return make_client
+
+
+@pytest.fixture
+def admin_api_client(authenticated_api_client):
+    return authenticated_api_client("ADMIN")
+
+
+@pytest.fixture
+def operations_api_client(authenticated_api_client):
+    return authenticated_api_client("OPERATIONS")
+
+
+@pytest.fixture
+def read_only_api_client(authenticated_api_client):
+    return authenticated_api_client("READ_ONLY")

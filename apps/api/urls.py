@@ -4,6 +4,10 @@ from apps.api.customer_views import (
     CustomerDetailView,
     CustomerListCreateView,
 )
+from apps.api.product_views import (
+    ProductDetailView,
+    ProductListCreateView,
+)
 from apps.api.views import ApiRootView
 
 
@@ -18,5 +22,15 @@ urlpatterns = [
         "customers/<uuid:customer_id>/",
         CustomerDetailView.as_view(),
         name="customer-detail",
+    ),
+    path(
+        "products/",
+        ProductListCreateView.as_view(),
+        name="product-list",
+    ),
+    path(
+        "products/<uuid:product_id>/",
+        ProductDetailView.as_view(),
+        name="product-detail",
     ),
 ]
