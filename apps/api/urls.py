@@ -16,6 +16,10 @@ from apps.api.inventory_views import (
     InventoryDetailView,
     InventoryListView,
 )
+from apps.api.order_views import (
+    OrderDetailView,
+    OrderListCreateView,
+)
 from apps.api.views import ApiRootView
 
 
@@ -60,5 +64,15 @@ urlpatterns = [
         "inventory/<uuid:inventory_id>/",
         InventoryDetailView.as_view(),
         name="inventory-detail",
+    ),
+    path(
+        "orders/",
+        OrderListCreateView.as_view(),
+        name="order-list",
+    ),
+    path(
+        "orders/<uuid:order_id>/",
+        OrderDetailView.as_view(),
+        name="order-detail",
     ),
 ]
