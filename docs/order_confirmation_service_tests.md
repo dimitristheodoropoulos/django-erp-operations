@@ -3,7 +3,7 @@
 **Document:** Order Confirmation Service Specification  
 **Project:** Django ERP Operations Platform  
 **Version:** 1.0  
-**Status:** Draft  
+**Status:** Approved / Implemented
 **Requirements Baseline:** `14db353`  
 **Database Design Baseline:** `c5a9e31`  
 **Model Specification Baseline:** `13d0a8d`  
@@ -23,7 +23,7 @@ It is the authoritative reference for:
 - How it must behave under concurrent access
 - What tests must verify before implementation is considered complete
 
-The service will be implemented in:
+The service is implemented in:
 
 ```text
 apps/orders/services.py
@@ -38,9 +38,9 @@ model semantics already documented in the approved design specifications.
 
 **Service name:** `confirm_order`
 
-**Location (planned):** `apps/orders/services.py`
+**Location:** `apps/orders/services.py`
 
-**Signature (planned):**
+**Signature:**
 
 ```python
 def confirm_order(order_id: UUID) -> SalesOrder:
@@ -147,16 +147,15 @@ availability re-check or reservation update.
 
 ### 6.2 Lock Scope
 
-Lock all `StockItem` records identified by:
+Lock all `StockItem` records for the products referenced by the order lines.
 
-```text
-(product, warehouse)
-```
+The implementation **does not** require a warehouse to be specified on the
+order line. Instead, the service calculates the total required quantity per
+product and then allocates stock across all available warehouses using the
+deterministic allocation rule defined in Section 7.2.
 
-for each order line.
-
-If a product/warehouse combination does not exist, the service must treat
-that as `quantity = 0` (insufficient stock).
+If no stock exists for a product (i.e., no `StockItem` records), the service
+must treat that as `quantity = 0` (insufficient stock).
 
 ### 6.3 Re-check After Lock
 
@@ -678,23 +677,33 @@ These require explicit requirements before implementation.
 
 ## 14. Change History
 
-| Date       | Change                                      | Commit       |
-| ---------- | ------------------------------------------- | ------------ |
-| 2026-09-02 | Initial service specification created       | Working tree |
+| Date       | Change                                           | Commit       |
+| ---------- | ----------------------------------------------- | ------------ |
+| 2026-09-02 | Initial service specification created            | `2aefa32`    |
+| 2026-09-02 | Specification approved and implementation verified | `b517c56` |
 
 ---
 
 ## 15. Approval
 
-This specification is currently in Draft status.
+This specification is approved and has been implemented.
 
-Approval checkboxes:
+Approval record:
 
 ```text
-[ ] Service contract approved
-[ ] Test specification approved
-[ ] Concurrency strategy approved
+[x] Service contract approved
+[x] Test specification approved
+[x] Concurrency strategy approved
 ```
 
-No service implementation should begin until this specification is approved
-and the test suite is written.
+Implementation:
+
+```text
+apps/orders/services.py::confirm_order
+```
+
+Automated verification:
+
+```text
+python -m pytest tests/orders/test_confirmation.py -q
+→ 18 passed

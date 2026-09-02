@@ -1,9 +1,9 @@
 # ERP Requirements Traceability Matrix
 
-**Status:** Living Engineering Artifact  
-**Requirements Baseline:** `14db353`  
-**Database Design Baseline:** `c5a9e31`  
-**Model Specification Baseline:** `13d0a8d`  
+**Status:** Living Engineering Artifact
+**Requirements Baseline:** `14db353`
+**Database Design Baseline:** `c5a9e31`
+**Model Specification Baseline:** `13d0a8d`
 **Last Updated:** 2026-09-02
 
 ---
@@ -103,9 +103,9 @@ to a database model.
 | ERP-REQ-014 | Positive Quantities          | `architecture.md` / Orders                  | `database.md` | `models.md` | `orders/0001_initial.py`       | —                                    | —    | —                              | DESIGNED    |
 | ERP-REQ-015 | Price Snapshot               | `architecture.md` / Orders                  | `database.md` | `models.md` | `orders/0001_initial.py`       | —                                    | —    | —                              | DESIGNED    |
 | ERP-REQ-016 | Draft State                  | `architecture.md` / Orders                  | `database.md` | `models.md` | `orders/0001_initial.py`       | `SalesOrder`                         | —    | —                              | DESIGNED    |
-| ERP-REQ-017 | Order Confirmation           | Order lifecycle design                      | `database.md` | `models.md` | `orders/0001_initial.py`       | —                                    | —    | —                              | DESIGNED    |
-| ERP-REQ-018 | Stock Reservation            | Inventory/order workflow                    | `database.md` | `models.md` | `inventory/0001_initial.py`    | —                                    | —    | —                              | DESIGNED    |
-| ERP-REQ-019 | Insufficient Stock           | Inventory/order workflow                    | `database.md` | `models.md` | `inventory/0001_initial.py`    | —                                    | —    | —                              | DESIGNED    |
+| ERP-REQ-017 | Order Confirmation           | Order lifecycle design                      | `database.md` | `models.md` | `orders/0001_initial.py`       | `apps/orders/services.py::confirm_order` | `tests/orders/test_confirmation.py::test_confirm_valid_draft_order; test_confirm_non_draft_order_raises_invalid_order_state; test_confirm_inactive_customer_raises_inactive_customer; test_confirm_order_without_lines_raises_order_has_no_lines; test_confirm_inactive_product_raises_inactive_product` | `python -m pytest tests/orders/test_confirmation.py -q` → 18 passed | VERIFIED    |
+| ERP-REQ-018 | Stock Reservation            | Inventory/order workflow                    | `database.md` | `models.md` | `inventory/0001_initial.py`    | `apps/orders/services.py::confirm_order` | `tests/orders/test_confirmation.py::test_confirm_reserves_single_product; test_confirm_reserves_stock_across_multiple_warehouses; test_confirm_aggregates_multiple_lines_for_same_product; test_confirm_commits_order_and_reservation_together; test_confirm_allocates_stock_by_stock_item_id; test_concurrent_orders_competing_for_same_stock` | `python -m pytest tests/orders/test_confirmation.py -q` → 18 passed | VERIFIED    |
+| ERP-REQ-019 | Insufficient Stock           | Inventory/order workflow                    | `database.md` | `models.md` | `inventory/0001_initial.py`    | `apps/orders/services.py::confirm_order` | `tests/orders/test_confirmation.py::test_confirm_insufficient_stock_raises_insufficient_stock; test_insufficient_stock_leaves_order_in_draft; test_insufficient_stock_leaves_inventory_unchanged; test_confirmation_is_atomic_when_later_product_is_insufficient; test_concurrent_orders_competing_for_same_stock` | `python -m pytest tests/orders/test_confirmation.py -q` → 18 passed | VERIFIED    |
 | ERP-REQ-020 | Order Cancellation           | Order lifecycle design                      | `database.md` | `models.md` | `orders/0001_initial.py`       | —                                    | —    | —                              | DESIGNED    |
 | ERP-REQ-021 | Shipment                     | Order lifecycle design                      | `database.md` | `models.md` | `orders/0001_initial.py`       | —                                    | —    | —                              | DESIGNED    |
 | ERP-REQ-022 | Completion                   | Order lifecycle design                      | `database.md` | `models.md` | `orders/0001_initial.py`       | —                                    | —    | —                              | DESIGNED    |
