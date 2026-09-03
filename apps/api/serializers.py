@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from apps.customers.models import Customer
@@ -205,3 +207,23 @@ class OrderSerializer(serializers.ModelSerializer):
         )
 
         return order
+
+
+class PaymentWebhookSerializer(serializers.Serializer):
+    external_event_id = serializers.CharField(
+        max_length=255,
+        required=True,
+    )
+    event_type = serializers.CharField(
+        max_length=64,
+        required=True,
+    )
+    order_id = serializers.UUIDField(
+        required=True,
+    )
+    payment_amount = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        required=True,
+        min_value=Decimal("0.00"),
+    )

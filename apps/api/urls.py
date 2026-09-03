@@ -25,9 +25,15 @@ from apps.api.order_views import (
     OrderShipView,
 )
 from apps.api.views import ApiRootView
+from apps.api.integration_views import PaymentWebhookView
 
 
 urlpatterns = [
+    path(
+        "webhooks/payment/",
+        PaymentWebhookView.as_view(),
+        name="payment-webhook",
+    ),
     path("", ApiRootView.as_view(), name="api-root"),
     path(
         "customers/",
