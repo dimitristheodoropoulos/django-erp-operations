@@ -1,4 +1,5 @@
 from collections import defaultdict
+import logging
 
 from django.db import transaction
 
@@ -13,6 +14,8 @@ from apps.orders.exceptions import (
     OrderNotFound,
 )
 from apps.orders.models import SalesOrder
+
+logger = logging.getLogger(__name__)
 
 
 def confirm_order(order_id):
@@ -73,16 +76,28 @@ def confirm_order(order_id):
         for stock_item in stock_items:
             stock_by_product[stock_item.product_id].append(stock_item)
 
+        # Log inventory check before reservation
         for product_id in product_ids:
             required = required_quantities[product_id]
             available = sum(
                 item.available_quantity
                 for item in stock_by_product[product_id]
             )
+            logger.info(
+                "inventory_check",
+                extra={
+                    "event": "inventory_check",
+                    "order_id": str(order.id),
+                    "product_id": str(product_id),
+                    "required": required,
+                    "available": available,
+                }
+            )
 
             if available < required:
                 raise InsufficientStock
 
+        # Perform reservation
         for product_id in product_ids:
             remaining = required_quantities[product_id]
 
@@ -98,12 +113,34 @@ def confirm_order(order_id):
                     stock_item.save(
                         update_fields=["reserved_quantity", "modified_at"]
                     )
+                    logger.info(
+                        "inventory_reserved",
+                        extra={
+                            "event": "inventory_reserved",
+                            "order_id": str(order.id),
+                            "product_id": str(stock_item.product_id),
+                            "warehouse_id": str(stock_item.warehouse_id),
+                            "quantity": reservation,
+                        }
+                    )
                     remaining -= reservation
 
+        old_status = order.status
         order.status = SalesOrder.Status.CONFIRMED
         order.save(update_fields=["status", "modified_at"])
 
+        logger.info(
+            "order_state_transition",
+            extra={
+                "event": "order_state_transition",
+                "order_id": str(order.id),
+                "from_status": old_status,
+                "to_status": order.status,
+            }
+        )
+
         return order
+
 
 def cancel_order(order_id):
     """
@@ -123,8 +160,19 @@ def cancel_order(order_id):
         if order.status != SalesOrder.Status.DRAFT:
             raise InvalidOrderState
 
+        old_status = order.status
         order.status = SalesOrder.Status.CANCELLED
         order.save(update_fields=["status", "modified_at"])
+
+        logger.info(
+            "order_state_transition",
+            extra={
+                "event": "order_state_transition",
+                "order_id": str(order.id),
+                "from_status": old_status,
+                "to_status": order.status,
+            }
+        )
 
         return order
 
@@ -182,6 +230,7 @@ def ship_order(order_id):
             if reserved < required:
                 raise InsufficientStock
 
+        # Consume reserved stock
         for product_id in product_ids:
             remaining = required_quantities[product_id]
 
@@ -202,10 +251,31 @@ def ship_order(order_id):
                             "modified_at",
                         ]
                     )
+                    logger.info(
+                        "inventory_consumed",
+                        extra={
+                            "event": "inventory_consumed",
+                            "order_id": str(order.id),
+                            "product_id": str(stock_item.product_id),
+                            "warehouse_id": str(stock_item.warehouse_id),
+                            "quantity": consumed,
+                        }
+                    )
                     remaining -= consumed
 
+        old_status = order.status
         order.status = SalesOrder.Status.SHIPPED
         order.save(update_fields=["status", "modified_at"])
+
+        logger.info(
+            "order_state_transition",
+            extra={
+                "event": "order_state_transition",
+                "order_id": str(order.id),
+                "from_status": old_status,
+                "to_status": order.status,
+            }
+        )
 
         return order
 
@@ -228,7 +298,18 @@ def complete_order(order_id):
         if order.status != SalesOrder.Status.SHIPPED:
             raise InvalidOrderState
 
+        old_status = order.status
         order.status = SalesOrder.Status.COMPLETED
         order.save(update_fields=["status", "modified_at"])
+
+        logger.info(
+            "order_state_transition",
+            extra={
+                "event": "order_state_transition",
+                "order_id": str(order.id),
+                "from_status": old_status,
+                "to_status": order.status,
+            }
+        )
 
         return order

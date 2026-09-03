@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.api.serializers import PaymentWebhookSerializer
+from apps.integrations.exceptions import PaymentWebhookFailed
 from apps.integrations.services import process_payment_webhook
 from apps.integrations.models import ExternalEvent
 
@@ -20,13 +21,10 @@ class PaymentWebhookView(APIView):
         )
 
         if event.processing_status == ExternalEvent.ProcessingStatus.FAILED:
-            return Response(
-                {
-                    "error": "PAYMENT_WEBHOOK_FAILED",
-                    "external_event_id": event.external_event_id,
-                    "detail": event.error_message,
-                },
-                status=status.HTTP_409_CONFLICT,
+            # Raise the custom exception; central handler will format the response
+            raise PaymentWebhookFailed(
+                external_event_id=event.external_event_id,
+                message=event.error_message or "Payment webhook processing failed",
             )
 
         return Response(

@@ -1166,92 +1166,152 @@ The primary objective is to demonstrate a maintainable, testable, reliable and p
 
 # 30. Requirement Verification Reconciliation
 
-This section records the verification status of requirements against the
-currently implemented repository scope and automated test evidence.
+This section is the current requirement-verification reconciliation for
+Milestones 2A through 2E.
 
-A requirement is marked `VERIFIED` only where the implemented scope is
-covered by appropriate automated evidence. A requirement is marked `PARTIAL`
-where a tested implementation subset exists but the full requirement scope
-is not yet implemented. A requirement is marked `PENDING` where no
-implementation evidence exists for the required capability.
+It supersedes the historical Milestone 2B verification snapshot previously
+recorded in this section. The current state is based on the audited repository
+evidence recorded in `docs/milestones_2a_2e_reconciliation.md`.
 
-## 30.1 Core Order Confirmation Requirements
+## 30.1 Current verification status
 
-| Requirement | Implementation Evidence | Automated Evidence | Status |
-|---|---|---|---|
-| ERP-REQ-017 | `apps/orders/services.py::confirm_order` validates active customer, order lines, quantities, and available stock | `tests/orders/test_confirmation.py` and API confirmation tests | VERIFIED |
-| ERP-REQ-018 | `confirm_order` performs inventory reservation within the atomic confirmation operation | `tests/orders/test_confirmation.py::test_confirm_reserves_single_product` and related confirmation tests | VERIFIED |
-| ERP-REQ-019 | `confirm_order` rejects insufficient stock and preserves order/inventory state atomically | Insufficient-stock and atomicity tests in `tests/orders/test_confirmation.py`; `tests/api/test_orders.py::test_order_confirm_insufficient_stock_returns_409` | VERIFIED |
-| ERP-REQ-020 | No order cancellation implementation is currently evidenced | No cancellation API/business-rule test evidence | PENDING |
-| ERP-REQ-021 | No shipment transition implementation is currently evidenced | No shipment API/business-rule test evidence | PENDING |
-| ERP-REQ-022 | No completion transition implementation is currently evidenced | No completion API/business-rule test evidence | PENDING |
-| ERP-REQ-023 | No completed-order immutability implementation is currently evidenced | No completed-order immutability test evidence | PENDING |
+The current reconciliation covers all 70 requirements.
 
-## 30.2 REST API Requirements
+| Status | Count |
+|---|---:|
+| VERIFIED | 30 |
+| TESTED | 15 |
+| IMPLEMENTED | 8 |
+| PARTIAL | 2 |
+| DESIGNED | 4 |
+| PENDING | 11 |
+| **Total** | **70** |
 
-| Requirement | Implementation Evidence | Automated Evidence | Status |
-|---|---|---|---|
-| ERP-REQ-024 | API routes are explicitly mounted under `/api/v1/` | API endpoint tests use `/api/v1/` routes | VERIFIED |
-| ERP-REQ-025 | Customer list, retrieve, and create API implemented | `tests/api/test_customers.py` — 16 tests passed | VERIFIED |
-| ERP-REQ-026 | Product list, retrieve, and create API implemented | `tests/api/test_products.py` — 15 tests passed | VERIFIED |
-| ERP-REQ-027 | Inventory read API exposes stock and derived available quantity; no write endpoint | `tests/api/test_inventory.py` — 11 tests passed | VERIFIED |
-| ERP-REQ-028 | Order list, retrieve, create, and confirmation API implemented; cancellation, shipment, and completion are not yet implemented | `tests/api/test_orders.py` — 32 tests passed | PARTIAL |
-| ERP-REQ-029 | Structured validation and business-error responses are implemented for the tested order confirmation API | Confirmation error tests cover 404, 400, and 409 responses with structured error bodies | PARTIAL |
-| ERP-REQ-030–037 | Webhook and migration functionality are outside the currently implemented milestone scope | No current implementation evidence | PENDING |
+## 30.2 Audited requirement matrix
 
-## 30.3 Authentication and Authorization
+| Requirement | Area | Current state | Evidence / milestone | Remaining gap |
+|---|---|---|---|---|
+| ERP-REQ-001 | Customer Creation | TESTED | 2A/2B customer API tests | Full cross-domain verification not separately established |
+| ERP-REQ-002 | Customer Retrieval | TESTED | 2B customer API tests | Same |
+| ERP-REQ-003 | Customer Status | TESTED | 2B customer API tests | Same |
+| ERP-REQ-004 | Product Creation | IMPLEMENTED | Product model | Dedicated creation test |
+| ERP-REQ-005 | Unique SKU | TESTED | Model integrity tests | Full verification chain |
+| ERP-REQ-006 | Product Validation | IMPLEMENTED | DB constraints | Dedicated validation tests |
+| ERP-REQ-007 | Warehouse Management | TESTED | Model integrity tests | Full verification chain |
+| ERP-REQ-008 | Stock Representation | TESTED | Model integrity tests | Full verification chain |
+| ERP-REQ-009 | Stock Quantities | TESTED | Model integrity tests | Full verification chain |
+| ERP-REQ-010 | Stock Validation | TESTED | Model integrity tests | Full verification chain |
+| ERP-REQ-011 | Inventory Consistency | VERIFIED | Confirmation service + concurrency/atomicity tests | None within current scope |
+| ERP-REQ-012 | Sales Order Creation | IMPLEMENTED | SalesOrder model | Dedicated creation test |
+| ERP-REQ-013 | Sales Order Lines | TESTED | Order confirmation tests | Dedicated broader line API evidence |
+| ERP-REQ-014 | Positive Quantities | TESTED | DB constraint test | Full verification chain |
+| ERP-REQ-015 | Price Snapshot | IMPLEMENTED | SalesOrderLine model | Dedicated snapshot test |
+| ERP-REQ-016 | Draft State | TESTED | Model integrity test | Full verification chain |
+| ERP-REQ-017 | Order Confirmation | VERIFIED | Confirmation service + tests | None within current scope |
+| ERP-REQ-018 | Stock Reservation | VERIFIED | Confirmation service + reservation/concurrency tests | None within current scope |
+| ERP-REQ-019 | Insufficient Stock | VERIFIED | Confirmation service + atomicity tests | None within current scope |
+| ERP-REQ-020 | Order Cancellation | VERIFIED | 2C lifecycle service + 19 lifecycle tests | No production workflow integration |
+| ERP-REQ-021 | Shipment | VERIFIED | 2C shipment service + lifecycle tests | No carrier integration |
+| ERP-REQ-022 | Completion | VERIFIED | 2C completion service + lifecycle tests | No external fulfillment integration |
+| ERP-REQ-023 | Completed Order Immutability | VERIFIED | 2C lifecycle state enforcement/tests | No broader domain-wide immutability policy |
+| ERP-REQ-024 | API Versioning | TESTED | `/api/v1/` routing + API tests | Dedicated versioning test/documentation not isolated |
+| ERP-REQ-025 | Customer API | VERIFIED | 2B customer API tests | No material gap within implemented customer API scope |
+| ERP-REQ-026 | Product API | VERIFIED | Product REST API implementation + dedicated product API tests | None within current scoped requirement |
+| ERP-REQ-027 | Inventory API | VERIFIED | Inventory REST API implementation + dedicated inventory API tests | None within current scoped requirement |
+| ERP-REQ-028 | Sales Order API | VERIFIED | 2D lifecycle API + tests | Broader CRUD/order API coverage may remain |
+| ERP-REQ-029 | API Validation | TESTED | serializers + 2D/2E API error tests | No globally centralized unexpected-error contract |
+| ERP-REQ-030 | Payment Webhook | VERIFIED | 2E webhook implementation/tests | No real payment provider |
+| ERP-REQ-031 | Webhook Validation | VERIFIED | 2E serializer + invalid payload tests | No provider-specific schema/signature |
+| ERP-REQ-032 | Webhook Idempotency | TESTED | unique event ID + duplicate webhook test | Concurrent first-delivery race remains untested; unique-key race handling is not production-grade distributed idempotency |
+| ERP-REQ-033 | Unknown Order Webhook | VERIFIED | FAILED event + unknown-order test | No external retry/dead-letter policy |
+| ERP-REQ-034 | Legacy Customer Import | PENDING | Not in 2A–2E scope | Migration implementation |
+| ERP-REQ-035 | Migration Validation | PENDING | Not in 2A–2E scope | Migration validation |
+| ERP-REQ-036 | Data Transformation | PENDING | Not in 2A–2E scope | Transformation layer |
+| ERP-REQ-037 | Migration Report | PENDING | Not in 2A–2E scope | Migration reporting |
+| ERP-REQ-038 | Authentication | VERIFIED | DRF config + auth tests | Broader endpoint coverage |
+| ERP-REQ-039 | User Roles | VERIFIED | Roles migration + permission tests | Broader endpoint matrix |
+| ERP-REQ-040 | Permission Enforcement | TESTED | Customer API permission tests | Broader endpoint coverage |
+| ERP-REQ-041 | Business Errors | VERIFIED | Order-domain business exceptions + centralized API mappings + business-error tests | Broader cross-domain business-error taxonomy can be expanded as new domains are added |
+| ERP-REQ-042 | Consistent API Errors | VERIFIED | Centralized API error envelope for validation, business-rule and integration failures + API regression tests | Broader endpoint-specific error contract coverage can be expanded as new APIs are implemented |
+| ERP-REQ-043 | Unexpected Errors | VERIFIED | Centralized DRF exception handler + safe 500 response + unexpected-error logging tests | Broader operational alerting/monitoring remains future scope |
+| ERP-REQ-044 | Application Logging | PARTIAL | Structured application logging for order transitions, inventory changes, webhook processing and unexpected application errors + logging regression tests | Request-failure and migration-failure logging are not yet fully evidenced |
+| ERP-REQ-045 | Sensitive Information | PARTIAL | Configured application formatter excludes sensitive extra fields + regression test verifies passwords, authentication credentials, API secrets and database credentials are not rendered | No general-purpose sanitizer prevents sensitive values explicitly embedded in log messages |
+| ERP-REQ-046 | Automated Testing | VERIFIED | Pytest suite + repeated full regressions | No material gap within current scope |
+| ERP-REQ-047 | Business Logic Testing | VERIFIED | Confirmation, lifecycle and webhook tests | No formal coverage matrix |
+| ERP-REQ-048 | Inventory Testing | VERIFIED | Inventory/model/confirmation/lifecycle tests including atomicity and concurrency | Reservation release is N/A under current cancellation contract; broader concurrent scenarios remain limited |
+| ERP-REQ-049 | Order Lifecycle Testing | VERIFIED | 2C lifecycle tests | No production integration |
+| ERP-REQ-050 | API Testing | VERIFIED | Customer, lifecycle and webhook API tests + full regressions | Endpoint-wide matrix can be expanded as future APIs are implemented |
+| ERP-REQ-051 | Webhook Testing | VERIFIED | 2E 8-case suite | No provider/HIL testing |
+| ERP-REQ-052 | Migration Testing | PENDING | Not implemented | Migration tests |
+| ERP-REQ-053 | PostgreSQL | IMPLEMENTED | PostgreSQL 16 runtime verification | Broader DB verification |
+| ERP-REQ-054 | Referential Integrity | IMPLEMENTED | Django relationships/migrations | Explicit schema verification |
+| ERP-REQ-055 | Database Constraints | IMPLEMENTED | Model constraints/migrations | Consolidated constraint audit |
+| ERP-REQ-056 | Environment Configuration | VERIFIED | `config/settings.py` reads environment variables for secret, debug, hosts and PostgreSQL settings | No material gap within current scope |
+| ERP-REQ-057 | Secret Management | VERIFIED | Tracked `.env.example` contains placeholders; secrets are environment-configured | No real secret-management backend is claimed |
+| ERP-REQ-058 | Environment Separation | DESIGNED | Configuration architecture | Explicit environment separation |
+| ERP-REQ-059 | Containerized Development | DESIGNED | `docker-compose.yml` provides PostgreSQL infrastructure | `Dockerfile` is empty; complete application containerization is not implemented |
+| ERP-REQ-060 | Database Container | IMPLEMENTED | PostgreSQL container healthy | Persistent deployment verification |
+| ERP-REQ-061 | Reproducible Environment | PENDING | `pyproject.toml` and PostgreSQL Compose infrastructure exist | No complete documented startup/test procedure; `Dockerfile` and `docs/development.md` are empty |
+| ERP-REQ-062 | CI Pipeline | DESIGNED | CI architecture | CI implementation/evidence |
+| ERP-REQ-063 | CI Failure Handling | DESIGNED | CI architecture | Failure-path verification |
+| ERP-REQ-064 | Architecture Documentation | VERIFIED | Substantive `docs/architecture.md` covering boundaries, components, transactions and design decisions | No material documentation gap within current scope |
+| ERP-REQ-065 | Database Documentation | VERIFIED | Substantive `docs/database.md` covering entities, relationships, constraints, transactions and migrations | No material documentation gap within current scope |
+| ERP-REQ-066 | API Documentation | VERIFIED | Substantive `docs/api.md` covering endpoints, schemas, validation, errors, lifecycle and integration design | Documentation contains stale pre-2D/2E implementation-status text and an obsolete webhook path; reconciliation update is required |
+| ERP-REQ-067 | Development Documentation | PENDING | `docs/development.md` exists but is empty | Complete developer setup, startup, migrations, tests and quality-check procedures required |
+| ERP-REQ-068 | Version Control | VERIFIED | Git repository and milestone history | No material gap within current scope |
+| ERP-REQ-069 | Meaningful Commits | VERIFIED | Meaningful milestone commits with purpose-specific messages | No material gap within current scope |
+| ERP-REQ-070 | Reproducibility | PENDING | Git, migrations, `pyproject.toml`, `.env.example` and PostgreSQL Compose infrastructure | Clean-checkout end-to-end reproduction is not yet demonstrated; Dockerfile/development procedure are incomplete |
 
-| Requirement | Implementation Evidence | Automated Evidence | Status |
-|---|---|---|---|
-| ERP-REQ-038 | Protected API endpoints require authentication | Anonymous API tests return HTTP 401 across customer, product, inventory, warehouse, order, and order-confirmation endpoints | VERIFIED |
-| ERP-REQ-039 | Logical roles `ADMIN`, `OPERATIONS`, and `READ_ONLY` are implemented | Role fixtures and role-specific API tests | VERIFIED |
-| ERP-REQ-040 | Role-based permissions restrict operations while allowing permitted reads/writes | ADMIN/OPERATIONS success tests and READ_ONLY HTTP 403 denial tests across APIs | VERIFIED |
+## 30.3 Milestone scope and regression evidence
 
-## 30.4 Error Handling
+The reconciliation covers the implemented scope of Milestones 2A through 2E:
 
-| Requirement | Implementation Evidence | Automated Evidence | Status |
-|---|---|---|---|
-| ERP-REQ-041 | Order confirmation domain exceptions are translated into controlled API responses | Order confirmation tests cover the implemented business-error mappings | VERIFIED |
-| ERP-REQ-042 | Structured API error responses are implemented for order confirmation | Confirmation tests verify exact error structure and status codes | PARTIAL |
-| ERP-REQ-043 | Central unexpected-exception handling is not currently evidenced | No current automated evidence for centralized unexpected-error handling | PENDING |
+- Milestone 2A: domain and order workflow foundation.
+- Milestone 2B: REST API foundation and API verification.
+- Milestone 2C: sales-order lifecycle services.
+- Milestone 2D: sales-order lifecycle REST API.
+- Milestone 2E: external payment webhook integration foundation.
 
-## 30.5 Testing Requirements
+Current Milestone 2E baseline:
 
-| Requirement | Implementation Evidence | Automated Evidence | Status |
-|---|---|---|---|
-| ERP-REQ-046 | Project uses pytest automated testing | Full regression: 113 passed | VERIFIED |
-| ERP-REQ-047 | Critical order-confirmation business rules have automated tests | Order confirmation service and API tests | VERIFIED |
-| ERP-REQ-048 | Inventory availability, insufficient stock, reservation, atomicity, and concurrency behavior are tested in the implemented scope | Inventory/order business-rule test suite and confirmation tests | VERIFIED |
-| ERP-REQ-049 | Implemented order creation and confirmation lifecycle behavior is tested; cancellation/shipment/completion are not yet implemented | `tests/api/test_orders.py` and order confirmation tests | PARTIAL |
-| ERP-REQ-050 | Implemented REST API endpoints have success and failure tests | Customer 16/16, Product 15/15, Inventory 11/11, Order 32/32 | VERIFIED |
+- Git commit: `0fb41d2`
+- Dedicated payment webhook suite: 8 passed.
+- Full regression: 157 passed.
+- Django system check passed.
+- Python compilation checks passed.
+- `git diff --check` clean.
 
-## 30.6 API Documentation
+The reconciliation distinguishes implemented behavior from independently tested
+or verified behavior. Requirements marked PARTIAL or PENDING retain explicit
+remaining gaps and are not treated as completed implementation scope.
 
-| Requirement | Implementation Evidence | Automated Evidence | Status |
-|---|---|---|---|
-| ERP-REQ-066 | `docs/api.md` documents implemented API endpoints, methods, request/response behavior, authentication, validation, and confirmation error mappings | API implementation and tests are aligned with the documented confirmation behavior | VERIFIED |
+## 30.4 Known remaining cross-cutting gaps
 
-## 30.7 Verification Baseline
+The current audit identifies the following cross-cutting gaps that remain
+outside the completed 2A-2E verification baseline:
 
-The reconciliation above reflects the repository state at the time of
-Milestone 2B REST API verification.
+- Unified cross-domain business-error taxonomy.
+- Unified API error envelope across validation, business-rule, and integration
+  failures.
+- Global unexpected-exception handling.
+- Structured application logging.
+- Explicit sensitive-information protection and verification at
+  logging/application boundaries.
 
-The following API test suites passed:
+These gaps are intentionally retained as requirements work rather than being
+implicitly marked complete by the existence of individual endpoint
+implementations.
 
-```text
-tests/api/test_customers.py   16 passed
-tests/api/test_products.py    15 passed
-tests/api/test_inventory.py   11 passed
-tests/api/test_orders.py      32 passed
-```
+## 30.5 Reconciliation authority and traceability
 
-The complete pytest regression passed:
+`docs/milestones_2a_2e_reconciliation.md` is the audited 2A-2E reconciliation
+source used to establish the current status recorded here.
 
-```text
-113 passed
-```
+`docs/traceability.md` is intentionally not synchronized by this update.
+Traceability synchronization is a separate controlled documentation step to be
+performed after this requirements reconciliation has passed its diff and
+consistency checks.
 
-This reconciliation documents implemented and tested scope only. It does not
-claim physical, production, integration, webhook, migration, shipment,
-completion, cancellation, or other functionality for which implementation
-and automated evidence are not currently present.
+The current regression and implementation state documented here must therefore
+be interpreted as the Milestone 2A-2E baseline only; it does not constitute
+Milestone 2F scope or implementation.

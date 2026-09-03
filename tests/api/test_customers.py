@@ -134,7 +134,10 @@ def test_customer_create_rejects_empty_name(operations_client):
     )
 
     assert response.status_code == 400
-    assert "name" in response.json()
+    # New error envelope: details are nested under error.details
+    assert response.json()["error"]["details"]["name"] == [
+        "This field may not be blank."
+    ]
 
 
 @pytest.mark.django_db

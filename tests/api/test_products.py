@@ -132,7 +132,9 @@ def test_product_create_rejects_duplicate_sku(operations_api_client):
     )
 
     assert response.status_code == 400
-    assert "sku" in response.json()
+    assert response.json()["error"]["details"]["sku"] == [
+        "product with this sku already exists."
+    ]
 
 
 @pytest.mark.django_db
@@ -148,7 +150,9 @@ def test_product_create_rejects_negative_price(operations_api_client):
     )
 
     assert response.status_code == 400
-    assert "unit_price" in response.json()
+    assert response.json()["error"]["details"]["unit_price"] == [
+        "Ensure this value is greater than or equal to 0."
+    ]
 
 
 @pytest.mark.django_db
@@ -164,7 +168,9 @@ def test_product_create_rejects_empty_sku(operations_api_client):
     )
 
     assert response.status_code == 400
-    assert "sku" in response.json()
+    assert response.json()["error"]["details"]["sku"] == [
+        "This field may not be blank."
+    ]
 
 
 @pytest.mark.django_db
@@ -180,7 +186,9 @@ def test_product_create_rejects_empty_name(operations_api_client):
     )
 
     assert response.status_code == 400
-    assert "name" in response.json()
+    assert response.json()["error"]["details"]["name"] == [
+        "This field may not be blank."
+    ]
 
 
 @pytest.mark.django_db

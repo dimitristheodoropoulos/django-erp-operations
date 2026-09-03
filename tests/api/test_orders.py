@@ -256,8 +256,8 @@ def test_order_create_rejects_client_supplied_unit_price(
     )
 
     assert response.status_code == 400
-    # The error is nested under "lines" -> list -> "unit_price"
-    assert response.json()["lines"][0]["unit_price"] == (
+    # The error is nested under error.details -> lines -> list
+    assert response.json()["error"]["details"]["lines"][0]["unit_price"] == (
         "Unit price is set by the server."
     )
 
@@ -282,7 +282,7 @@ def test_order_create_rejects_unknown_customer(
     )
 
     assert response.status_code == 400
-    assert "customer" in response.json()
+    assert "customer" in response.json()["error"]["details"]
 
 
 @pytest.mark.django_db
@@ -305,7 +305,7 @@ def test_order_create_rejects_unknown_product(
     )
 
     assert response.status_code == 400
-    assert "lines" in response.json()
+    assert "lines" in response.json()["error"]["details"]
 
 
 @pytest.mark.parametrize("quantity", [0, -1])
@@ -331,7 +331,7 @@ def test_order_create_rejects_non_positive_quantity(
     )
 
     assert response.status_code == 400
-    assert "lines" in response.json()
+    assert "lines" in response.json()["error"]["details"]
 
 
 @pytest.mark.django_db
@@ -349,7 +349,7 @@ def test_order_create_rejects_empty_lines(
     )
 
     assert response.status_code == 400
-    assert "lines" in response.json()
+    assert "lines" in response.json()["error"]["details"]
 
 
 @pytest.mark.django_db
