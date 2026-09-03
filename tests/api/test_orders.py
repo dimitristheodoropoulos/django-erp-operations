@@ -461,6 +461,7 @@ def test_read_only_cannot_create_orders(
 
     assert response.status_code == 403
 
+
 # ---------------------------------------------------------------------------
 # Order confirmation API
 # ---------------------------------------------------------------------------
@@ -498,6 +499,12 @@ def test_order_confirm_unknown_order_returns_404(
     )
 
     assert response.status_code == 404
+    assert response.json() == {
+        "error": {
+            "code": "ORDER_NOT_FOUND",
+            "message": "The requested order does not exist.",
+        }
+    }
 
 
 @pytest.mark.django_db
@@ -517,6 +524,12 @@ def test_order_confirm_invalid_state_returns_409(
     )
 
     assert response.status_code == 409
+    assert response.json() == {
+        "error": {
+            "code": "INVALID_ORDER_STATE",
+            "message": "The order cannot be confirmed from its current state.",
+        }
+    }
 
 
 @pytest.mark.django_db
@@ -536,6 +549,12 @@ def test_order_confirm_inactive_customer_returns_409(
     )
 
     assert response.status_code == 409
+    assert response.json() == {
+        "error": {
+            "code": "INACTIVE_CUSTOMER",
+            "message": "The order customer is inactive.",
+        }
+    }
 
 
 @pytest.mark.django_db
@@ -551,6 +570,12 @@ def test_order_confirm_without_lines_returns_409(
     )
 
     assert response.status_code == 409
+    assert response.json() == {
+        "error": {
+            "code": "ORDER_HAS_NO_LINES",
+            "message": "An order must contain at least one line before confirmation.",
+        }
+    }
 
 
 @pytest.mark.django_db
@@ -570,6 +595,12 @@ def test_order_confirm_inactive_product_returns_409(
     )
 
     assert response.status_code == 409
+    assert response.json() == {
+        "error": {
+            "code": "INACTIVE_PRODUCT",
+            "message": "The order contains an inactive product.",
+        }
+    }
 
 
 @pytest.mark.django_db
@@ -589,6 +620,12 @@ def test_order_confirm_insufficient_stock_returns_409(
     )
 
     assert response.status_code == 409
+    assert response.json() == {
+        "error": {
+            "code": "INSUFFICIENT_STOCK",
+            "message": "Insufficient stock to confirm the order.",
+        }
+    }
 
     order.refresh_from_db()
     stock_item.refresh_from_db()
@@ -624,6 +661,12 @@ def test_order_confirm_invalid_quantity_returns_400(
     )
 
     assert response.status_code == 400
+    assert response.json() == {
+        "error": {
+            "code": "INVALID_ORDER_QUANTITY",
+            "message": "Order line quantity must be greater than zero.",
+        }
+    }
 
 
 @pytest.mark.django_db

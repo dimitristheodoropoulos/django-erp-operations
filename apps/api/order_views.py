@@ -48,23 +48,72 @@ class OrderConfirmView(APIView):
             order = confirm_order(order_id)
         except OrderNotFound:
             return Response(
-                {"detail": "Order not found."},
+                {
+                    "error": {
+                        "code": "ORDER_NOT_FOUND",
+                        "message": "The requested order does not exist.",
+                    }
+                },
                 status=status.HTTP_404_NOT_FOUND,
             )
         except InvalidOrderQuantity:
             return Response(
-                {"detail": "Order contains an invalid quantity."},
+                {
+                    "error": {
+                        "code": "INVALID_ORDER_QUANTITY",
+                        "message": "Order line quantity must be greater than zero.",
+                    }
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except (
-            InvalidOrderState,
-            InactiveCustomer,
-            InactiveProduct,
-            OrderHasNoLines,
-            InsufficientStock,
-        ):
+        except InvalidOrderState:
             return Response(
-                {"detail": "Order cannot be confirmed."},
+                {
+                    "error": {
+                        "code": "INVALID_ORDER_STATE",
+                        "message": "The order cannot be confirmed from its current state.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        except InactiveCustomer:
+            return Response(
+                {
+                    "error": {
+                        "code": "INACTIVE_CUSTOMER",
+                        "message": "The order customer is inactive.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        except OrderHasNoLines:
+            return Response(
+                {
+                    "error": {
+                        "code": "ORDER_HAS_NO_LINES",
+                        "message": "An order must contain at least one line before confirmation.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        except InactiveProduct:
+            return Response(
+                {
+                    "error": {
+                        "code": "INACTIVE_PRODUCT",
+                        "message": "The order contains an inactive product.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        except InsufficientStock:
+            return Response(
+                {
+                    "error": {
+                        "code": "INSUFFICIENT_STOCK",
+                        "message": "Insufficient stock to confirm the order.",
+                    }
+                },
                 status=status.HTTP_409_CONFLICT,
             )
 
