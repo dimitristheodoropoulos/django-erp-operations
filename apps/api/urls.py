@@ -17,6 +17,7 @@ from apps.api.inventory_views import (
     InventoryListView,
 )
 from apps.api.order_views import (
+    OrderConfirmView,
     OrderDetailView,
     OrderListCreateView,
 )
@@ -74,5 +75,10 @@ urlpatterns = [
         "orders/<uuid:order_id>/",
         OrderDetailView.as_view(),
         name="order-detail",
+    ),
+    path(
+        "orders/<uuid:order_id>/confirm/",
+        OrderConfirmView.as_view(),
+        name="order-confirm",
     ),
 ]

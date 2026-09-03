@@ -460,3 +460,238 @@ def test_read_only_cannot_create_orders(
     )
 
     assert response.status_code == 403
+
+# ---------------------------------------------------------------------------
+# Order confirmation API
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_order_confirm_returns_200_and_confirms_order(
+    operations_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 200
+
+    order.refresh_from_db()
+    stock_item.refresh_from_db()
+
+    assert order.status == SalesOrder.Status.CONFIRMED
+    assert stock_item.reserved_quantity == order_line.quantity
+
+
+@pytest.mark.django_db
+def test_order_confirm_unknown_order_returns_404(
+    operations_api_client,
+):
+    response = operations_api_client.post(
+        "/api/v1/orders/00000000-0000-0000-0000-000000000000/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_order_confirm_invalid_state_returns_409(
+    operations_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    order.status = SalesOrder.Status.CONFIRMED
+    order.save(update_fields=["status"])
+
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 409
+
+
+@pytest.mark.django_db
+def test_order_confirm_inactive_customer_returns_409(
+    operations_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    order.customer.active = False
+    order.customer.save(update_fields=["active"])
+
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 409
+
+
+@pytest.mark.django_db
+def test_order_confirm_without_lines_returns_409(
+    operations_api_client,
+    order,
+    stock_item,
+):
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 409
+
+
+@pytest.mark.django_db
+def test_order_confirm_inactive_product_returns_409(
+    operations_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    order_line.product.active = False
+    order_line.product.save(update_fields=["active"])
+
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 409
+
+
+@pytest.mark.django_db
+def test_order_confirm_insufficient_stock_returns_409(
+    operations_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    order_line.quantity = 101
+    order_line.save(update_fields=["quantity"])
+
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 409
+
+    order.refresh_from_db()
+    stock_item.refresh_from_db()
+
+    assert order.status == SalesOrder.Status.DRAFT
+    assert stock_item.reserved_quantity == 0
+
+
+@pytest.mark.django_db
+def test_order_confirm_invalid_quantity_returns_400(
+    operations_api_client,
+    order,
+    order_line,
+    stock_item,
+    monkeypatch,
+):
+    from apps.api import order_views
+    from apps.orders.exceptions import InvalidOrderQuantity
+
+    def raise_invalid_quantity(order_id):
+        raise InvalidOrderQuantity
+
+    monkeypatch.setattr(
+        order_views,
+        "confirm_order",
+        raise_invalid_quantity,
+    )
+
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_anonymous_order_confirm_requires_authentication(
+    order,
+    order_line,
+    stock_item,
+):
+    response = APIClient().post(
+        f"/api/v1/orders/{order.id}/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_read_only_cannot_confirm_order(
+    read_only_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    response = read_only_api_client.post(
+        f"/api/v1/orders/{order.id}/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_admin_can_confirm_order(
+    admin_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    response = admin_api_client.post(
+        f"/api/v1/orders/{order.id}/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 200
+
+    order.refresh_from_db()
+
+    assert order.status == SalesOrder.Status.CONFIRMED
+
+
+@pytest.mark.django_db
+def test_operations_can_confirm_order(
+    operations_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/confirm/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 200
+
+    order.refresh_from_db()
+
+    assert order.status == SalesOrder.Status.CONFIRMED
