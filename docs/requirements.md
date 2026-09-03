@@ -1161,3 +1161,97 @@ Verification
 The primary engineering objective is not feature count.
 
 The primary objective is to demonstrate a maintainable, testable, reliable and production-oriented Django backend that models realistic business operations.
+
+---
+
+# 30. Requirement Verification Reconciliation
+
+This section records the verification status of requirements against the
+currently implemented repository scope and automated test evidence.
+
+A requirement is marked `VERIFIED` only where the implemented scope is
+covered by appropriate automated evidence. A requirement is marked `PARTIAL`
+where a tested implementation subset exists but the full requirement scope
+is not yet implemented. A requirement is marked `PENDING` where no
+implementation evidence exists for the required capability.
+
+## 30.1 Core Order Confirmation Requirements
+
+| Requirement | Implementation Evidence | Automated Evidence | Status |
+|---|---|---|---|
+| ERP-REQ-017 | `apps/orders/services.py::confirm_order` validates active customer, order lines, quantities, and available stock | `tests/orders/test_confirmation.py` and API confirmation tests | VERIFIED |
+| ERP-REQ-018 | `confirm_order` performs inventory reservation within the atomic confirmation operation | `tests/orders/test_confirmation.py::test_confirm_reserves_single_product` and related confirmation tests | VERIFIED |
+| ERP-REQ-019 | `confirm_order` rejects insufficient stock and preserves order/inventory state atomically | Insufficient-stock and atomicity tests in `tests/orders/test_confirmation.py`; `tests/api/test_orders.py::test_order_confirm_insufficient_stock_returns_409` | VERIFIED |
+| ERP-REQ-020 | No order cancellation implementation is currently evidenced | No cancellation API/business-rule test evidence | PENDING |
+| ERP-REQ-021 | No shipment transition implementation is currently evidenced | No shipment API/business-rule test evidence | PENDING |
+| ERP-REQ-022 | No completion transition implementation is currently evidenced | No completion API/business-rule test evidence | PENDING |
+| ERP-REQ-023 | No completed-order immutability implementation is currently evidenced | No completed-order immutability test evidence | PENDING |
+
+## 30.2 REST API Requirements
+
+| Requirement | Implementation Evidence | Automated Evidence | Status |
+|---|---|---|---|
+| ERP-REQ-024 | API routes are explicitly mounted under `/api/v1/` | API endpoint tests use `/api/v1/` routes | VERIFIED |
+| ERP-REQ-025 | Customer list, retrieve, and create API implemented | `tests/api/test_customers.py` — 16 tests passed | VERIFIED |
+| ERP-REQ-026 | Product list, retrieve, and create API implemented | `tests/api/test_products.py` — 15 tests passed | VERIFIED |
+| ERP-REQ-027 | Inventory read API exposes stock and derived available quantity; no write endpoint | `tests/api/test_inventory.py` — 11 tests passed | VERIFIED |
+| ERP-REQ-028 | Order list, retrieve, create, and confirmation API implemented; cancellation, shipment, and completion are not yet implemented | `tests/api/test_orders.py` — 32 tests passed | PARTIAL |
+| ERP-REQ-029 | Structured validation and business-error responses are implemented for the tested order confirmation API | Confirmation error tests cover 404, 400, and 409 responses with structured error bodies | PARTIAL |
+| ERP-REQ-030–037 | Webhook and migration functionality are outside the currently implemented milestone scope | No current implementation evidence | PENDING |
+
+## 30.3 Authentication and Authorization
+
+| Requirement | Implementation Evidence | Automated Evidence | Status |
+|---|---|---|---|
+| ERP-REQ-038 | Protected API endpoints require authentication | Anonymous API tests return HTTP 401 across customer, product, inventory, warehouse, order, and order-confirmation endpoints | VERIFIED |
+| ERP-REQ-039 | Logical roles `ADMIN`, `OPERATIONS`, and `READ_ONLY` are implemented | Role fixtures and role-specific API tests | VERIFIED |
+| ERP-REQ-040 | Role-based permissions restrict operations while allowing permitted reads/writes | ADMIN/OPERATIONS success tests and READ_ONLY HTTP 403 denial tests across APIs | VERIFIED |
+
+## 30.4 Error Handling
+
+| Requirement | Implementation Evidence | Automated Evidence | Status |
+|---|---|---|---|
+| ERP-REQ-041 | Order confirmation domain exceptions are translated into controlled API responses | Order confirmation tests cover the implemented business-error mappings | VERIFIED |
+| ERP-REQ-042 | Structured API error responses are implemented for order confirmation | Confirmation tests verify exact error structure and status codes | PARTIAL |
+| ERP-REQ-043 | Central unexpected-exception handling is not currently evidenced | No current automated evidence for centralized unexpected-error handling | PENDING |
+
+## 30.5 Testing Requirements
+
+| Requirement | Implementation Evidence | Automated Evidence | Status |
+|---|---|---|---|
+| ERP-REQ-046 | Project uses pytest automated testing | Full regression: 113 passed | VERIFIED |
+| ERP-REQ-047 | Critical order-confirmation business rules have automated tests | Order confirmation service and API tests | VERIFIED |
+| ERP-REQ-048 | Inventory availability, insufficient stock, reservation, atomicity, and concurrency behavior are tested in the implemented scope | Inventory/order business-rule test suite and confirmation tests | VERIFIED |
+| ERP-REQ-049 | Implemented order creation and confirmation lifecycle behavior is tested; cancellation/shipment/completion are not yet implemented | `tests/api/test_orders.py` and order confirmation tests | PARTIAL |
+| ERP-REQ-050 | Implemented REST API endpoints have success and failure tests | Customer 16/16, Product 15/15, Inventory 11/11, Order 32/32 | VERIFIED |
+
+## 30.6 API Documentation
+
+| Requirement | Implementation Evidence | Automated Evidence | Status |
+|---|---|---|---|
+| ERP-REQ-066 | `docs/api.md` documents implemented API endpoints, methods, request/response behavior, authentication, validation, and confirmation error mappings | API implementation and tests are aligned with the documented confirmation behavior | VERIFIED |
+
+## 30.7 Verification Baseline
+
+The reconciliation above reflects the repository state at the time of
+Milestone 2B REST API verification.
+
+The following API test suites passed:
+
+```text
+tests/api/test_customers.py   16 passed
+tests/api/test_products.py    15 passed
+tests/api/test_inventory.py   11 passed
+tests/api/test_orders.py      32 passed
+```
+
+The complete pytest regression passed:
+
+```text
+113 passed
+```
+
+This reconciliation documents implemented and tested scope only. It does not
+claim physical, production, integration, webhook, migration, shipment,
+completion, cancellation, or other functionality for which implementation
+and automated evidence are not currently present.
