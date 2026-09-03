@@ -738,3 +738,353 @@ def test_operations_can_confirm_order(
     order.refresh_from_db()
 
     assert order.status == SalesOrder.Status.CONFIRMED
+
+
+# ---------------------------------------------------------------------------
+# Sales order lifecycle API
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_order_cancel_returns_200_and_cancels_draft_order(
+    operations_api_client,
+    order,
+):
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/cancel/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    order.refresh_from_db()
+
+    assert order.status == SalesOrder.Status.CANCELLED
+    assert data["id"] == str(order.id)
+    assert data["status"] == "CANCELLED"
+
+
+@pytest.mark.django_db
+def test_order_cancel_invalid_state_returns_409(
+    operations_api_client,
+    order,
+):
+    order.status = SalesOrder.Status.CONFIRMED
+    order.save(update_fields=["status"])
+
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/cancel/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "error": {
+            "code": "INVALID_ORDER_STATE",
+            "message": "The order cannot be cancelled from its current state.",
+        }
+    }
+
+
+@pytest.mark.django_db
+def test_order_cancel_unknown_order_returns_404(
+    operations_api_client,
+):
+    response = operations_api_client.post(
+        "/api/v1/orders/00000000-0000-0000-0000-000000000000/cancel/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "error": {
+            "code": "ORDER_NOT_FOUND",
+            "message": "The requested order does not exist.",
+        }
+    }
+
+
+@pytest.mark.django_db
+def test_anonymous_order_cancel_requires_authentication():
+    response = APIClient().post(
+        "/api/v1/orders/00000000-0000-0000-0000-000000000000/cancel/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_read_only_cannot_cancel_orders(
+    read_only_api_client,
+    order,
+):
+    response = read_only_api_client.post(
+        f"/api/v1/orders/{order.id}/cancel/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_order_ship_returns_200_and_consumes_reserved_inventory(
+    operations_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    order.status = SalesOrder.Status.CONFIRMED
+    order.save(update_fields=["status"])
+
+    stock_item.reserved_quantity = order_line.quantity
+    stock_item.save(update_fields=["reserved_quantity"])
+
+    original_quantity = stock_item.quantity
+
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/ship/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    order.refresh_from_db()
+    stock_item.refresh_from_db()
+
+    assert order.status == SalesOrder.Status.SHIPPED
+    assert data["id"] == str(order.id)
+    assert data["status"] == "SHIPPED"
+    assert stock_item.quantity == original_quantity - order_line.quantity
+    assert stock_item.reserved_quantity == 0
+
+
+@pytest.mark.django_db
+def test_order_ship_invalid_state_returns_409(
+    operations_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/ship/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "error": {
+            "code": "INVALID_ORDER_STATE",
+            "message": "The order cannot be shipped from its current state.",
+        }
+    }
+
+
+@pytest.mark.django_db
+def test_order_ship_unknown_order_returns_404(
+    operations_api_client,
+):
+    response = operations_api_client.post(
+        "/api/v1/orders/00000000-0000-0000-0000-000000000000/ship/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "error": {
+            "code": "ORDER_NOT_FOUND",
+            "message": "The requested order does not exist.",
+        }
+    }
+
+
+@pytest.mark.django_db
+def test_order_ship_insufficient_reserved_stock_returns_409(
+    operations_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    order.status = SalesOrder.Status.CONFIRMED
+    order.save(update_fields=["status"])
+
+    stock_item.reserved_quantity = order_line.quantity - 1
+    stock_item.save(update_fields=["reserved_quantity"])
+
+    original_quantity = stock_item.quantity
+    original_reserved_quantity = stock_item.reserved_quantity
+
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/ship/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "error": {
+            "code": "INSUFFICIENT_STOCK",
+            "message": "Insufficient stock to ship the order.",
+        }
+    }
+
+    order.refresh_from_db()
+    stock_item.refresh_from_db()
+
+    assert order.status == SalesOrder.Status.CONFIRMED
+    assert stock_item.quantity == original_quantity
+    assert stock_item.reserved_quantity == original_reserved_quantity
+
+
+@pytest.mark.django_db
+def test_anonymous_order_ship_requires_authentication():
+    response = APIClient().post(
+        "/api/v1/orders/00000000-0000-0000-0000-000000000000/ship/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_read_only_cannot_ship_orders(
+    read_only_api_client,
+    order,
+):
+    response = read_only_api_client.post(
+        f"/api/v1/orders/{order.id}/ship/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_order_complete_returns_200_and_completes_shipped_order(
+    operations_api_client,
+    order,
+):
+    order.status = SalesOrder.Status.SHIPPED
+    order.save(update_fields=["status"])
+
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/complete/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    order.refresh_from_db()
+
+    assert order.status == SalesOrder.Status.COMPLETED
+    assert data["id"] == str(order.id)
+    assert data["status"] == "COMPLETED"
+
+
+@pytest.mark.django_db
+def test_order_complete_does_not_modify_inventory(
+    operations_api_client,
+    order,
+    order_line,
+    stock_item,
+):
+    order.status = SalesOrder.Status.SHIPPED
+    order.save(update_fields=["status"])
+
+    original_quantity = stock_item.quantity
+    original_reserved_quantity = stock_item.reserved_quantity
+
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/complete/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 200
+
+    order.refresh_from_db()
+    stock_item.refresh_from_db()
+
+    assert order.status == SalesOrder.Status.COMPLETED
+    assert stock_item.quantity == original_quantity
+    assert stock_item.reserved_quantity == original_reserved_quantity
+
+
+@pytest.mark.django_db
+def test_order_complete_invalid_state_returns_409(
+    operations_api_client,
+    order,
+):
+    response = operations_api_client.post(
+        f"/api/v1/orders/{order.id}/complete/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "error": {
+            "code": "INVALID_ORDER_STATE",
+            "message": "The order cannot be completed from its current state.",
+        }
+    }
+
+
+@pytest.mark.django_db
+def test_order_complete_unknown_order_returns_404(
+    operations_api_client,
+):
+    response = operations_api_client.post(
+        "/api/v1/orders/00000000-0000-0000-0000-000000000000/complete/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "error": {
+            "code": "ORDER_NOT_FOUND",
+            "message": "The requested order does not exist.",
+        }
+    }
+
+
+@pytest.mark.django_db
+def test_anonymous_order_complete_requires_authentication():
+    response = APIClient().post(
+        "/api/v1/orders/00000000-0000-0000-0000-000000000000/complete/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_read_only_cannot_complete_orders(
+    read_only_api_client,
+    order,
+):
+    response = read_only_api_client.post(
+        f"/api/v1/orders/{order.id}/complete/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 403

@@ -14,7 +14,12 @@ from apps.orders.exceptions import (
     OrderNotFound,
 )
 from apps.orders.models import SalesOrder
-from apps.orders.services import confirm_order
+from apps.orders.services import (
+    cancel_order,
+    complete_order,
+    confirm_order,
+    ship_order,
+)
 
 
 class OrderListCreateView(generics.ListCreateAPIView):
@@ -112,6 +117,115 @@ class OrderConfirmView(APIView):
                     "error": {
                         "code": "INSUFFICIENT_STOCK",
                         "message": "Insufficient stock to confirm the order.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return Response(
+            OrderSerializer(order).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class OrderCancelView(APIView):
+    permission_classes = [CustomerAccessPermission]
+
+    def post(self, request, order_id):
+        try:
+            order = cancel_order(order_id)
+        except OrderNotFound:
+            return Response(
+                {
+                    "error": {
+                        "code": "ORDER_NOT_FOUND",
+                        "message": "The requested order does not exist.",
+                    }
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except InvalidOrderState:
+            return Response(
+                {
+                    "error": {
+                        "code": "INVALID_ORDER_STATE",
+                        "message": "The order cannot be cancelled from its current state.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return Response(
+            OrderSerializer(order).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class OrderShipView(APIView):
+    permission_classes = [CustomerAccessPermission]
+
+    def post(self, request, order_id):
+        try:
+            order = ship_order(order_id)
+        except OrderNotFound:
+            return Response(
+                {
+                    "error": {
+                        "code": "ORDER_NOT_FOUND",
+                        "message": "The requested order does not exist.",
+                    }
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except InvalidOrderState:
+            return Response(
+                {
+                    "error": {
+                        "code": "INVALID_ORDER_STATE",
+                        "message": "The order cannot be shipped from its current state.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        except InsufficientStock:
+            return Response(
+                {
+                    "error": {
+                        "code": "INSUFFICIENT_STOCK",
+                        "message": "Insufficient stock to ship the order.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return Response(
+            OrderSerializer(order).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class OrderCompleteView(APIView):
+    permission_classes = [CustomerAccessPermission]
+
+    def post(self, request, order_id):
+        try:
+            order = complete_order(order_id)
+        except OrderNotFound:
+            return Response(
+                {
+                    "error": {
+                        "code": "ORDER_NOT_FOUND",
+                        "message": "The requested order does not exist.",
+                    }
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except InvalidOrderState:
+            return Response(
+                {
+                    "error": {
+                        "code": "INVALID_ORDER_STATE",
+                        "message": "The order cannot be completed from its current state.",
                     }
                 },
                 status=status.HTTP_409_CONFLICT,

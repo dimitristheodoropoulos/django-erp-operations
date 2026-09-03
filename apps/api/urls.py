@@ -17,9 +17,12 @@ from apps.api.inventory_views import (
     InventoryListView,
 )
 from apps.api.order_views import (
+    OrderCancelView,
+    OrderCompleteView,
     OrderConfirmView,
     OrderDetailView,
     OrderListCreateView,
+    OrderShipView,
 )
 from apps.api.views import ApiRootView
 
@@ -80,5 +83,20 @@ urlpatterns = [
         "orders/<uuid:order_id>/confirm/",
         OrderConfirmView.as_view(),
         name="order-confirm",
+    ),
+    path(
+        "orders/<uuid:order_id>/cancel/",
+        OrderCancelView.as_view(),
+        name="order-cancel",
+    ),
+    path(
+        "orders/<uuid:order_id>/ship/",
+        OrderShipView.as_view(),
+        name="order-ship",
+    ),
+    path(
+        "orders/<uuid:order_id>/complete/",
+        OrderCompleteView.as_view(),
+        name="order-complete",
     ),
 ]
