@@ -43,21 +43,40 @@ def process_payment_webhook(
             )
             return existing
 
-        # Look up the order
+        # Look up and lock the order before creating the event.
+        # Re-check idempotency after acquiring the order lock so concurrent
+        # first deliveries of the same event serialize safely.
         received_at = timezone.now()
         try:
             order = SalesOrder.objects.select_for_update().get(id=order_id)
         except SalesOrder.DoesNotExist:
-            # Persist failed event
-            event = ExternalEvent.objects.create(
+            # Persist failed event. get_or_create() handles concurrent
+            # first deliveries through the unique external event ID.
+            event, created = ExternalEvent.objects.get_or_create(
                 external_event_id=external_event_id,
-                event_type=event_type,
-                order_id=None,
-                payment_amount=payment_amount,
-                processing_status=ExternalEvent.ProcessingStatus.FAILED,
-                received_at=received_at,
-                error_message="The referenced sales order does not exist.",
+                defaults={
+                    "event_type": event_type,
+                    "order_id": None,
+                    "payment_amount": payment_amount,
+                    "processing_status": ExternalEvent.ProcessingStatus.FAILED,
+                    "received_at": received_at,
+                    "error_message": (
+                        "The referenced sales order does not exist."
+                    ),
+                },
             )
+
+            if not created:
+                logger.info(
+                    "payment_webhook_duplicate",
+                    extra={
+                        "event": "payment_webhook_duplicate",
+                        "external_event_id": external_event_id,
+                        "existing_status": event.processing_status,
+                    }
+                )
+                return event
+
             logger.warning(
                 "payment_webhook_failed",
                 extra={
@@ -70,16 +89,47 @@ def process_payment_webhook(
             # Return the failed event (do not raise)
             return event
 
-        # Create successful event
-        event = ExternalEvent.objects.create(
+        # Re-check after acquiring the order lock. A concurrent request may
+        # have created the event while this request was waiting for the lock.
+        existing = ExternalEvent.objects.filter(
+            external_event_id=external_event_id
+        ).select_for_update().first()
+
+        if existing:
+            logger.info(
+                "payment_webhook_duplicate",
+                extra={
+                    "event": "payment_webhook_duplicate",
+                    "external_event_id": external_event_id,
+                    "existing_status": existing.processing_status,
+                }
+            )
+            return existing
+
+        # get_or_create() also protects the unique event ID if another
+        # transaction can race at the database boundary.
+        event, created = ExternalEvent.objects.get_or_create(
             external_event_id=external_event_id,
-            event_type=event_type,
-            order=order,
-            payment_amount=payment_amount,
-            processing_status=ExternalEvent.ProcessingStatus.PROCESSED,
-            received_at=received_at,
-            processed_at=received_at,
+            defaults={
+                "event_type": event_type,
+                "order": order,
+                "payment_amount": payment_amount,
+                "processing_status": ExternalEvent.ProcessingStatus.PROCESSED,
+                "received_at": received_at,
+                "processed_at": received_at,
+            },
         )
+
+        if not created:
+            logger.info(
+                "payment_webhook_duplicate",
+                extra={
+                    "event": "payment_webhook_duplicate",
+                    "external_event_id": external_event_id,
+                    "existing_status": event.processing_status,
+                }
+            )
+            return event
 
         logger.info(
             "payment_webhook_processed",

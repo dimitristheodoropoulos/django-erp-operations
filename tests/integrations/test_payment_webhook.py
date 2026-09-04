@@ -1,9 +1,10 @@
+from decimal import Decimal
+import uuid
+
 import pytest
 from rest_framework.test import APIClient
-from decimal import Decimal
 
 from apps.integrations.models import ExternalEvent
-from apps.orders.models import SalesOrder
 
 
 @pytest.mark.django_db
@@ -175,3 +176,108 @@ def test_failed_webhook_does_not_modify_order(
     order.refresh_from_db()
 
     assert order.status == original_status
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_first_delivery_of_same_payment_webhook_is_idempotent(
+    order,
+):
+    """Concurrent first deliveries of the same event must create one event."""
+    import threading
+
+    from django.db import close_old_connections
+
+    from apps.integrations.services import process_payment_webhook
+
+    external_event_id = "evt-concurrent-first-delivery"
+    results = []
+    errors = []
+    barrier = threading.Barrier(2)
+
+    def worker():
+        close_old_connections()
+        try:
+            barrier.wait()
+            event = process_payment_webhook(
+                external_event_id=external_event_id,
+                event_type="PAYMENT_RECEIVED",
+                order_id=order.id,
+                payment_amount=Decimal("125.00"),
+            )
+            results.append(event.processing_status)
+        except Exception as exc:
+            errors.append(exc)
+        finally:
+            close_old_connections()
+
+    thread_a = threading.Thread(target=worker)
+    thread_b = threading.Thread(target=worker)
+
+    thread_a.start()
+    thread_b.start()
+
+    thread_a.join()
+    thread_b.join()
+
+    assert not errors
+    assert len(results) == 2
+    assert all(
+        status == ExternalEvent.ProcessingStatus.PROCESSED
+        for status in results
+    )
+
+    assert ExternalEvent.objects.filter(
+        external_event_id=external_event_id
+    ).count() == 1
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_first_delivery_of_unknown_order_is_idempotent():
+    """Concurrent deliveries for an unknown order must create one FAILED event."""
+    import threading
+
+    from django.db import close_old_connections
+
+    from apps.integrations.services import process_payment_webhook
+
+    unknown_order_id = uuid.uuid4()
+    external_event_id = "evt-concurrent-unknown-order"
+    results = []
+    errors = []
+    barrier = threading.Barrier(2)
+
+    def worker():
+        close_old_connections()
+        try:
+            barrier.wait()
+            event = process_payment_webhook(
+                external_event_id=external_event_id,
+                event_type="PAYMENT_RECEIVED",
+                order_id=unknown_order_id,
+                payment_amount=Decimal("125.00"),
+            )
+            results.append(event.processing_status)
+        except Exception as exc:
+            errors.append(exc)
+        finally:
+            close_old_connections()
+
+    thread_a = threading.Thread(target=worker)
+    thread_b = threading.Thread(target=worker)
+
+    thread_a.start()
+    thread_b.start()
+
+    thread_a.join()
+    thread_b.join()
+
+    assert not errors
+    assert len(results) == 2
+    assert all(
+        status == ExternalEvent.ProcessingStatus.FAILED
+        for status in results
+    )
+
+    assert ExternalEvent.objects.filter(
+        external_event_id=external_event_id
+    ).count() == 1
