@@ -1224,10 +1224,10 @@ The current reconciliation covers all 70 requirements.
 | ERP-REQ-031 | Webhook Validation | VERIFIED | 2E serializer + invalid payload tests | No provider-specific schema/signature |
 | ERP-REQ-032 | Webhook Idempotency | TESTED | unique event ID + duplicate webhook test | Concurrent first-delivery race remains untested; unique-key race handling is not production-grade distributed idempotency |
 | ERP-REQ-033 | Unknown Order Webhook | VERIFIED | FAILED event + unknown-order test | No external retry/dead-letter policy |
-| ERP-REQ-034 | Legacy Customer Import | PENDING | Not in 2A–2E scope | Migration implementation |
-| ERP-REQ-035 | Migration Validation | PENDING | Not in 2A–2E scope | Migration validation |
-| ERP-REQ-036 | Data Transformation | PENDING | Not in 2A–2E scope | Transformation layer |
-| ERP-REQ-037 | Migration Report | PENDING | Not in 2A–2E scope | Migration reporting |
+| ERP-REQ-034 | Legacy Customer Import | VERIFIED | Customer import service + management command + 13 dedicated migration tests | Legacy customer CSV import is implemented and verified; no external ERP/Odoo source integration is claimed |
+| ERP-REQ-035 | Migration Validation | VERIFIED | `_validate_row()` + invalid-record tests | Legacy records are validated before insertion and invalid rows are rejected with diagnostics |
+| ERP-REQ-036 | Data Transformation | VERIFIED | `_transform_row()` + transformation test | Legacy CSV values are explicitly normalized into the application domain representation |
+| ERP-REQ-037 | Migration Report | VERIFIED | `CustomerImportReport` + management-command output tests | Processed/imported/rejected counts and row/field/message validation diagnostics are reported |
 | ERP-REQ-038 | Authentication | VERIFIED | DRF config + auth tests | Broader endpoint coverage |
 | ERP-REQ-039 | User Roles | VERIFIED | Roles migration + permission tests | Broader endpoint matrix |
 | ERP-REQ-040 | Permission Enforcement | TESTED | Customer API permission tests | Broader endpoint coverage |
@@ -1242,25 +1242,25 @@ The current reconciliation covers all 70 requirements.
 | ERP-REQ-049 | Order Lifecycle Testing | VERIFIED | 2C lifecycle tests | No production integration |
 | ERP-REQ-050 | API Testing | VERIFIED | Customer, lifecycle and webhook API tests + full regressions | Endpoint-wide matrix can be expanded as future APIs are implemented |
 | ERP-REQ-051 | Webhook Testing | VERIFIED | 2E 8-case suite | No provider/HIL testing |
-| ERP-REQ-052 | Migration Testing | PENDING | Not implemented | Migration tests |
+| ERP-REQ-052 | Migration Testing | VERIFIED | 13 dedicated migration tests + full regression | Valid and invalid legacy customer records are covered by automated migration tests |
 | ERP-REQ-053 | PostgreSQL | IMPLEMENTED | PostgreSQL 16 runtime verification | Broader DB verification |
 | ERP-REQ-054 | Referential Integrity | IMPLEMENTED | Django relationships/migrations | Explicit schema verification |
 | ERP-REQ-055 | Database Constraints | IMPLEMENTED | Model constraints/migrations | Consolidated constraint audit |
 | ERP-REQ-056 | Environment Configuration | VERIFIED | `config/settings.py` reads environment variables for secret, debug, hosts and PostgreSQL settings | No material gap within current scope |
 | ERP-REQ-057 | Secret Management | VERIFIED | Tracked `.env.example` contains placeholders; secrets are environment-configured | No real secret-management backend is claimed |
 | ERP-REQ-058 | Environment Separation | DESIGNED | Configuration architecture | Explicit environment separation |
-| ERP-REQ-059 | Containerized Development | DESIGNED | `docker-compose.yml` provides PostgreSQL infrastructure | `Dockerfile` is empty; complete application containerization is not implemented |
-| ERP-REQ-060 | Database Container | IMPLEMENTED | PostgreSQL container healthy | Persistent deployment verification |
-| ERP-REQ-061 | Reproducible Environment | PENDING | `pyproject.toml` and PostgreSQL Compose infrastructure exist | No complete documented startup/test procedure; `Dockerfile` and `docs/development.md` are empty |
-| ERP-REQ-062 | CI Pipeline | DESIGNED | CI architecture | CI implementation/evidence |
+| ERP-REQ-059 | Containerized Development | VERIFIED | `Dockerfile`, `docker-compose.yml` + Docker verification | Dockerized Django application and PostgreSQL development environment build and start successfully; full regression passes in the container |
+| ERP-REQ-060 | Database Container | VERIFIED | PostgreSQL Compose service + healthcheck | PostgreSQL container reaches healthy state and the Django web service starts against it |
+| ERP-REQ-061 | Reproducible Environment | VERIFIED | `pyproject.toml`, `Dockerfile`, `docker-compose.yml`, `docs/development.md` + Docker verification | Documented local and Docker development procedures execute successfully, including startup, migrations, checks, compilation and tests |
+| ERP-REQ-062 | CI Pipeline | VERIFIED | `.github/workflows/ci.yml` + successful GitHub Actions CI run | CI provisions PostgreSQL 16, installs dependencies, migrates, checks, compiles and executes pytest successfully |
 | ERP-REQ-063 | CI Failure Handling | DESIGNED | CI architecture | Failure-path verification |
 | ERP-REQ-064 | Architecture Documentation | VERIFIED | Substantive `docs/architecture.md` covering boundaries, components, transactions and design decisions | No material documentation gap within current scope |
 | ERP-REQ-065 | Database Documentation | VERIFIED | Substantive `docs/database.md` covering entities, relationships, constraints, transactions and migrations | No material documentation gap within current scope |
 | ERP-REQ-066 | API Documentation | VERIFIED | Substantive `docs/api.md` covering endpoints, schemas, validation, errors, lifecycle and integration design | Documentation contains stale pre-2D/2E implementation-status text and an obsolete webhook path; reconciliation update is required |
-| ERP-REQ-067 | Development Documentation | PENDING | `docs/development.md` exists but is empty | Complete developer setup, startup, migrations, tests and quality-check procedures required |
+| ERP-REQ-067 | Development Documentation | VERIFIED | `docs/development.md` | Development guide documents setup, environment configuration, PostgreSQL, migrations, checks, tests, compilation, Docker workflow and management commands |
 | ERP-REQ-068 | Version Control | VERIFIED | Git repository and milestone history | No material gap within current scope |
 | ERP-REQ-069 | Meaningful Commits | VERIFIED | Meaningful milestone commits with purpose-specific messages | No material gap within current scope |
-| ERP-REQ-070 | Reproducibility | PENDING | Git, migrations, `pyproject.toml`, `.env.example` and PostgreSQL Compose infrastructure | Clean-checkout end-to-end reproduction is not yet demonstrated; Dockerfile/development procedure are incomplete |
+| ERP-REQ-070 | Reproducibility | PENDING | Git, migrations, `pyproject.toml`, `.env.example` and PostgreSQL Compose infrastructure | Dockerized build/startup, PostgreSQL initialization, migrations, Django checks, compilation, and full test execution are reproducible in the current environment; a fresh clean-checkout/end-to-end reproduction has not yet been independently demonstrated |
 
 ## 30.3 Milestone scope and regression evidence
 
