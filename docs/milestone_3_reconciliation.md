@@ -10,8 +10,8 @@
 `feature/milestone-2d-order-lifecycle-api`
 
 **Baseline before Milestone 3:**
-Milestone 2F completed at `c695b2e`, with the current full regression at
-188 passed tests.
+Milestone 2F completed at `9c56699`, with the full regression at
+168 passed tests.
 
 ---
 
