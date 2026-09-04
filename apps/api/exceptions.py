@@ -2,25 +2,62 @@
 Centralized DRF exception handler and custom exceptions for the ERP API.
 """
 
-from rest_framework.views import exception_handler as drf_exception_handler
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError as DRFValidationError
-from django.core.exceptions import ValidationError as DjangoValidationError
-from apps.orders.exceptions import (
-    OrderNotFound,
-    InvalidOrderState,
-    InactiveCustomer,
-    OrderHasNoLines,
-    InvalidOrderQuantity,
-    InactiveProduct,
-    InsufficientStock,
-    OrderConfirmationError,
-)
-from apps.integrations.exceptions import PaymentWebhookFailed
 import logging
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework import status
+from rest_framework.exceptions import (
+    AuthenticationFailed,
+    NotAuthenticated,
+    PermissionDenied,
+    ValidationError as DRFValidationError,
+)
+from rest_framework.response import Response
+from rest_framework.views import exception_handler as drf_exception_handler
+
+from apps.integrations.exceptions import PaymentWebhookFailed
+from apps.orders.exceptions import (
+    InactiveCustomer,
+    InactiveProduct,
+    InsufficientStock,
+    InvalidOrderQuantity,
+    InvalidOrderState,
+    OrderConfirmationError,
+    OrderHasNoLines,
+    OrderNotFound,
+)
+
 logger = logging.getLogger(__name__)
+
+
+def _log_request_failure(
+    *,
+    failure_type,
+    response,
+    context,
+    error_code=None,
+):
+    """Log a request failure using safe, non-sensitive metadata only."""
+
+    request = context.get("request")
+    view = context.get("view")
+    view_name = view.__class__.__name__ if view else None
+
+    if view_name == "OrderListCreateView":
+        view_name = "OrderCreateView"
+
+    logger.warning(
+        "request_failure",
+        extra={
+            "event": "request_failure",
+            "failure_type": failure_type,
+            "status_code": response.status_code,
+            "error_code": error_code,
+            "method": request.method if request else None,
+            "view": view_name,
+            "path": request.path if request else None,
+        },
+    )
 
 
 def custom_exception_handler(exc, context):
@@ -34,9 +71,8 @@ def custom_exception_handler(exc, context):
       - Unexpected exceptions into a safe 500 response with INTERNAL_ERROR code.
     """
 
-    # Handle our business exceptions first
+    # Handle our business exceptions first.
     if isinstance(exc, OrderConfirmationError):
-        # Base mapping for most business exceptions
         mapping = {
             OrderNotFound: (
                 "ORDER_NOT_FOUND",
@@ -67,19 +103,30 @@ def custom_exception_handler(exc, context):
 
         code, message, http_status = mapping.get(
             type(exc),
-            ("BUSINESS_ERROR", "A business rule violation occurred.", status.HTTP_409_CONFLICT),
+            (
+                "BUSINESS_ERROR",
+                "A business rule violation occurred.",
+                status.HTTP_409_CONFLICT,
+            ),
         )
 
         view = context.get("view")
         view_name = view.__class__.__name__ if view else None
 
-        # Special handling for InvalidOrderState with operation-specific messages
         if isinstance(exc, InvalidOrderState):
             lifecycle_messages = {
-                "OrderConfirmView": "The order cannot be confirmed from its current state.",
-                "OrderCancelView": "The order cannot be cancelled from its current state.",
-                "OrderShipView": "The order cannot be shipped from its current state.",
-                "OrderCompleteView": "The order cannot be completed from its current state.",
+                "OrderConfirmView": (
+                    "The order cannot be confirmed from its current state."
+                ),
+                "OrderCancelView": (
+                    "The order cannot be cancelled from its current state."
+                ),
+                "OrderShipView": (
+                    "The order cannot be shipped from its current state."
+                ),
+                "OrderCompleteView": (
+                    "The order cannot be completed from its current state."
+                ),
             }
             code = "INVALID_ORDER_STATE"
             message = lifecycle_messages.get(
@@ -88,7 +135,6 @@ def custom_exception_handler(exc, context):
             )
             http_status = status.HTTP_409_CONFLICT
 
-        # Special handling for InsufficientStock with operation-specific messages
         elif isinstance(exc, InsufficientStock):
             stock_messages = {
                 "OrderConfirmView": "Insufficient stock to confirm the order.",
@@ -101,7 +147,7 @@ def custom_exception_handler(exc, context):
             )
             http_status = status.HTTP_409_CONFLICT
 
-        return Response(
+        response = Response(
             {
                 "error": {
                     "code": code,
@@ -111,10 +157,18 @@ def custom_exception_handler(exc, context):
             status=http_status,
         )
 
-    # Handle payment webhook failure
+        _log_request_failure(
+            failure_type="business",
+            response=response,
+            context=context,
+            error_code=code,
+        )
+
+        return response
+
+    # Handle payment webhook failure.
     if isinstance(exc, PaymentWebhookFailed):
-        # Do not expose external_event_id in the error response
-        return Response(
+        response = Response(
             {
                 "error": {
                     "code": "PAYMENT_WEBHOOK_FAILED",
@@ -124,18 +178,17 @@ def custom_exception_handler(exc, context):
             status=status.HTTP_409_CONFLICT,
         )
 
-    # Let DRF handle other exceptions (like ValidationError)
+        return response
+
+    # Let DRF handle other exceptions.
     response = drf_exception_handler(exc, context)
 
-    # If response is None, DRF couldn't handle it -> unexpected error
+    # If response is None, DRF couldn't handle it -> unexpected error.
     if response is None:
-        # Log the unexpected exception with a safe structured event
-        # Do NOT include exception message or traceback in the log message
         view = context.get("view")
         view_name = view.__class__.__name__ if view else None
         request = context.get("request")
 
-        # Safe structured logging without exposing exception details
         logger.error(
             "unexpected_application_error",
             extra={
@@ -145,7 +198,6 @@ def custom_exception_handler(exc, context):
                 "method": request.method if request else None,
                 "path": request.path if request else None,
             },
-            # exc_info=False ensures we don't log traceback or exception message
             exc_info=False,
         )
 
@@ -159,7 +211,7 @@ def custom_exception_handler(exc, context):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    # For DRF ValidationError (including those raised by serializers), we keep the details
+    # Validation failures.
     if isinstance(exc, (DRFValidationError, DjangoValidationError)):
         error_data = {
             "error": {
@@ -169,26 +221,69 @@ def custom_exception_handler(exc, context):
             }
         }
         response.data = error_data
+
+        _log_request_failure(
+            failure_type="validation",
+            response=response,
+            context=context,
+            error_code="VALIDATION_ERROR",
+        )
+
         return response
 
-    # For other DRF exceptions (AuthenticationFailed, PermissionDenied, etc.),
-    # we transform to our envelope while keeping the original status code.
-    # We try to extract a meaningful message.
+    # Authentication failures.
+    if isinstance(exc, (AuthenticationFailed, NotAuthenticated)):
+        response.data = {
+            "error": {
+                "code": "REQUEST_ERROR",
+                "message": (
+                    "Authentication credentials were not provided or were invalid."
+                ),
+            }
+        }
+
+        _log_request_failure(
+            failure_type="authentication",
+            response=response,
+            context=context,
+            error_code="REQUEST_ERROR",
+        )
+
+        return response
+
+    # Permission failures.
+    if isinstance(exc, PermissionDenied):
+        response.data = {
+            "error": {
+                "code": "REQUEST_ERROR",
+                "message": "You do not have permission to perform this action.",
+            }
+        }
+
+        _log_request_failure(
+            failure_type="permission",
+            response=response,
+            context=context,
+            error_code="REQUEST_ERROR",
+        )
+
+        return response
+
+    # Other DRF exceptions.
     error_message = "An error occurred processing your request."
     if hasattr(exc, "detail"):
         if isinstance(exc.detail, dict):
-            # For validation errors that might have slipped, but they are already handled above.
             error_message = str(exc.detail)
         elif isinstance(exc.detail, list):
             error_message = exc.detail[0] if exc.detail else error_message
         else:
             error_message = str(exc.detail)
 
-    # Override response data
     response.data = {
         "error": {
             "code": "REQUEST_ERROR",
             "message": error_message,
         }
     }
+
     return response

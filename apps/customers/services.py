@@ -1,4 +1,5 @@
 import csv
+import logging
 from dataclasses import dataclass, field
 from io import StringIO
 
@@ -6,6 +7,9 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
 from apps.customers.models import Customer
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -84,34 +88,47 @@ def _validate_row(data):
 def import_customers(csv_content):
     report = CustomerImportReport()
 
-    reader = csv.DictReader(StringIO(csv_content))
+    try:
+        reader = csv.DictReader(StringIO(csv_content))
 
-    for row_number, row in enumerate(reader, start=2):
-        report.records_processed += 1
+        for row_number, row in enumerate(reader, start=2):
+            report.records_processed += 1
 
-        data = _transform_row(row)
-        errors = _validate_row(data)
+            data = _transform_row(row)
+            errors = _validate_row(data)
 
-        if errors:
-            report.records_rejected += 1
+            if errors:
+                report.records_rejected += 1
 
-            for error in errors:
-                report.validation_errors.append(
-                    {
-                        "row": row_number,
-                        "field": error["field"],
-                        "message": error["message"],
-                    }
-                )
+                for error in errors:
+                    report.validation_errors.append(
+                        {
+                            "row": row_number,
+                            "field": error["field"],
+                            "message": error["message"],
+                        }
+                    )
 
-            continue
+                continue
 
-        Customer.objects.create(
-            name=data["name"],
-            email=data["email"],
-            phone=data["phone"],
+            Customer.objects.create(
+                name=data["name"],
+                email=data["email"],
+                phone=data["phone"],
+            )
+
+            report.records_imported += 1
+
+    except Exception as exc:
+        logger.error(
+            "migration_failed",
+            extra={
+                "event": "migration_failed",
+                "failure_type": "operational",
+                "exception_type": type(exc).__name__,
+            },
+            exc_info=False,
         )
-
-        report.records_imported += 1
+        raise
 
     return report
