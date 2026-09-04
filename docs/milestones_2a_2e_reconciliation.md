@@ -454,7 +454,7 @@ reconciliation has been independently audited.
 | ERP-REQ-041 | Business Errors | VERIFIED | Order-domain business exceptions + centralized API mappings + business-error tests | Broader cross-domain business-error taxonomy can be expanded as new domains are added |
 | ERP-REQ-042 | Consistent API Errors | VERIFIED | Centralized API error envelope for validation, business-rule and integration failures + API regression tests | Broader endpoint-specific error contract coverage can be expanded as new APIs are implemented |
 | ERP-REQ-043 | Unexpected Errors | VERIFIED | Centralized DRF exception handler + safe 500 response + unexpected-error logging tests | Broader operational alerting/monitoring remains future scope |
-| ERP-REQ-044 | Application Logging | PARTIAL | Structured application logging for order transitions, inventory changes, webhook processing and unexpected application errors + logging regression tests | Request-failure and migration-failure logging are not yet fully evidenced |
+| ERP-REQ-044 | Application Logging | VERIFIED | Structured application logging for order transitions, inventory changes, webhook processing, unexpected application errors, request failures and migration failures + M4 logging regression tests | Broader production observability, monitoring and alerting remain future scope |
 | ERP-REQ-045 | Sensitive Information | PARTIAL | Configured application formatter excludes sensitive extra fields + regression test verifies passwords, authentication credentials, API secrets and database credentials are not rendered | No general-purpose sanitizer prevents sensitive values explicitly embedded in log messages |
 | ERP-REQ-046 | Automated Testing | VERIFIED | Pytest suite + repeated full regressions | No material gap within current scope |
 | ERP-REQ-047 | Business Logic Testing | VERIFIED | Confirmation, lifecycle and webhook tests | No formal coverage matrix |
@@ -518,15 +518,15 @@ Commit:
 
 ## Milestone 2F
 
-    12 dedicated error/logging tests passed
-    157 full regression tests passed
+    18 dedicated error/logging tests passed
+    188 full regression tests passed
     Django system check passed
     py_compile passed
     git diff --check passed
 
 Commit:
 
-    (working tree, not yet committed)
+    c695b2e Implement M4 request failure logging
 
 The 2E and 2F full regression evidence represents the strongest current
 regression evidence available for the 2A→2F implementation state.
@@ -553,7 +553,7 @@ The current project demonstrates the following engineering capabilities.
 | External integrations | payment webhook foundation | Good foundation |
 | Idempotency | persistent external event IDs | Good foundation |
 | Centralized exception handling | DRF custom exception handler with safe error envelope | Good |
-| Structured logging | application logs for order transitions, inventory, webhooks, unexpected errors | Good foundation |
+| Structured logging | application logs for request failures, order transitions, inventory, webhooks, migration failures and unexpected errors | Good foundation |
 | Automated testing | pytest + regression suites | Strong |
 | Git workflow | milestone commits/reconciliation | Strong |
 | Documentation/traceability | requirements + milestone evidence | Strong |
@@ -601,10 +601,10 @@ ERP-REQ-043 is now VERIFIED through centralized unexpected-error
 handling, a safe generic 500 response, and controlled application-error
 logging.
 
-ERP-REQ-044 is PARTIAL. Structured application logging now covers order
-state transitions, inventory changes, webhook processing, and unexpected
-application errors. Request-failure and migration-failure logging are not
-yet fully evidenced.
+ERP-REQ-044 is VERIFIED. Structured application logging covers request
+failures, order state transitions, inventory changes, webhook processing,
+migration failures, and unexpected application errors, with dedicated M4
+tests and full regression evidence.
 
 ERP-REQ-045 is PARTIAL. The configured application log formatter excludes
 sensitive structured fields, with regression evidence covering passwords,
@@ -659,7 +659,7 @@ These exclusions are intentional scope boundaries, not hidden failures.
 The work addressed requirements 041–045:
 
 - Centralized exception handler and error envelope (041, 042, 043)
-- Structured application logging (044 partial)
+- Structured application logging (044 verified)
 - Sensitive information protection (045 partial)
 
 Given the completion of 2F, the next milestone should focus on one of the
@@ -713,8 +713,11 @@ The requirement set is consistent across:
 All 70 requirement identifiers are present in all three documents,
 and their recorded statuses match.
 
-Milestone 2F is now fully reconciled for requirements 041–045.
-No additional Milestone 2F scope is implied by this synchronization.
+Milestone 2F is now reconciled for requirements 041–045.
+REQ-044 is VERIFIED and REQ-045 remains PARTIAL because a universal
+sanitizer for secrets embedded directly in arbitrary log messages is not
+implemented. No additional Milestone 2F scope is implied by this
+synchronization.
 
 ---
 

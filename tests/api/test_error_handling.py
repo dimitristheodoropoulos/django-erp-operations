@@ -249,3 +249,247 @@ class TestSensitiveInformation:
             "TEST_CREDENTIALS",
         ):
             assert sensitive_value not in formatted_log
+
+
+class TestM4RequestFailureLogging:
+    @pytest.mark.django_db
+    def test_validation_failure_emits_request_failure_log(
+        self,
+        operations_api_client,
+        caplog,
+    ):
+        with caplog.at_level(logging.WARNING):
+            response = operations_api_client.post(
+                "/api/v1/orders/",
+                {},
+                format="json",
+            )
+
+        assert response.status_code == 400
+
+        records = [
+            record
+            for record in caplog.records
+            if record.__dict__.get("event") == "request_failure"
+        ]
+
+        assert records
+
+        record = records[-1]
+        assert record.levelno == logging.WARNING
+        assert record.__dict__.get("failure_type") == "validation"
+        assert record.__dict__.get("status_code") == 400
+        assert record.__dict__.get("error_code") == "VALIDATION_ERROR"
+        assert record.__dict__.get("method") == "POST"
+        assert record.__dict__.get("view") == "OrderCreateView"
+        assert record.__dict__.get("path") == "/api/v1/orders/"
+
+
+class TestM4AuthenticationFailureLogging:
+    def test_authentication_failure_emits_request_failure_log(
+        self,
+        client,
+        caplog,
+    ):
+        with caplog.at_level(logging.WARNING):
+            response = client.get("/api/v1/customers/")
+
+        assert response.status_code == 401
+
+        records = [
+            record
+            for record in caplog.records
+            if record.__dict__.get("event") == "request_failure"
+        ]
+
+        assert records
+
+        record = records[-1]
+        assert record.levelno == logging.WARNING
+        assert record.__dict__.get("failure_type") == "authentication"
+        assert record.__dict__.get("status_code") == 401
+        assert record.__dict__.get("method") == "GET"
+
+
+class TestM4PermissionFailureLogging:
+    @pytest.mark.django_db
+    def test_permission_failure_emits_request_failure_log(
+        self,
+        read_only_api_client,
+        caplog,
+    ):
+        with caplog.at_level(logging.WARNING):
+            response = read_only_api_client.post(
+                "/api/v1/orders/",
+                {},
+                format="json",
+            )
+
+        assert response.status_code == 403
+
+        records = [
+            record
+            for record in caplog.records
+            if record.__dict__.get("event") == "request_failure"
+        ]
+
+        assert records
+
+        record = records[-1]
+        assert record.levelno == logging.WARNING
+        assert record.__dict__.get("failure_type") == "permission"
+        assert record.__dict__.get("status_code") == 403
+        assert record.__dict__.get("method") == "POST"
+
+
+class TestM4BusinessFailureLogging:
+    @pytest.mark.django_db
+    def test_business_failure_emits_request_failure_log(
+        self,
+        operations_api_client,
+        caplog,
+    ):
+        with caplog.at_level(logging.WARNING):
+            response = operations_api_client.post(
+                "/api/v1/orders/00000000-0000-0000-0000-000000000000/cancel/",
+                {},
+                format="json",
+            )
+
+        assert response.status_code == 404
+
+        records = [
+            record
+            for record in caplog.records
+            if record.__dict__.get("event") == "request_failure"
+        ]
+
+        assert records
+
+        record = records[-1]
+        assert record.levelno == logging.WARNING
+        assert record.__dict__.get("failure_type") == "business"
+        assert record.__dict__.get("status_code") == 404
+        assert record.__dict__.get("error_code") == "ORDER_NOT_FOUND"
+        assert record.__dict__.get("method") == "POST"
+
+
+class TestM4MigrationFailureLogging:
+    @pytest.mark.django_db
+    def test_operational_migration_failure_emits_migration_failed_log(
+        self,
+        tmp_path,
+        monkeypatch,
+        caplog,
+    ):
+        from django.core.management import call_command
+
+        import apps.customers.services as customer_services
+
+        csv_file = tmp_path / "customers.csv"
+        csv_file.write_text(
+            "name,email,phone\n"
+            "Test Customer,test@example.com,123456789\n",
+            encoding="utf-8",
+        )
+
+        def raise_migration_failure(*args, **kwargs):
+            raise RuntimeError("SECRET_MIGRATION_FAILURE")
+
+        monkeypatch.setattr(
+            customer_services.Customer.objects,
+            "create",
+            raise_migration_failure,
+        )
+
+        with caplog.at_level(logging.ERROR):
+            with pytest.raises(RuntimeError):
+                call_command(
+                    "import_customers",
+                    str(csv_file),
+                )
+
+        records = [
+            record
+            for record in caplog.records
+            if record.__dict__.get("event") == "migration_failed"
+        ]
+
+        assert records
+
+        record = records[-1]
+        assert record.levelno == logging.ERROR
+        assert record.__dict__.get("failure_type") == "operational"
+        assert record.__dict__.get("exception_type") == "RuntimeError"
+        assert "SECRET_MIGRATION_FAILURE" not in record.getMessage()
+
+
+class TestM4MigrationValidationLogging:
+    @pytest.mark.django_db
+    def test_rejected_migration_row_is_not_logged_as_migration_failure(
+        self,
+        tmp_path,
+        caplog,
+    ):
+        from django.core.management import call_command
+
+        csv_file = tmp_path / "customers.csv"
+        csv_file.write_text(
+            "name,email,phone\n"
+            ",invalid-email,123\n",
+            encoding="utf-8",
+        )
+
+        with caplog.at_level(logging.ERROR):
+            call_command(
+                "import_customers",
+                str(csv_file),
+            )
+
+        migration_failure_records = [
+            record
+            for record in caplog.records
+            if record.__dict__.get("event") == "migration_failed"
+        ]
+
+        assert not migration_failure_records
+
+
+class TestM4SensitiveOperationalLogging:
+    @pytest.mark.django_db
+    def test_request_failure_log_does_not_expose_request_data(
+        self,
+        operations_api_client,
+        caplog,
+    ):
+        sensitive_value = "SECRET_REQUEST_VALUE"
+
+        with caplog.at_level(logging.WARNING):
+            response = operations_api_client.post(
+                "/api/v1/orders/",
+                {
+                    "customer": sensitive_value,
+                    "password": "SECRET_PASSWORD",
+                    "token": "SECRET_TOKEN",
+                },
+                format="json",
+            )
+
+        assert response.status_code == 400
+
+        records = [
+            record
+            for record in caplog.records
+            if record.__dict__.get("event") == "request_failure"
+        ]
+
+        assert records
+
+        formatted_logs = "\n".join(
+            record.getMessage()
+            for record in records
+        )
+
+        assert sensitive_value not in formatted_logs
+        assert "SECRET_PASSWORD" not in formatted_logs
+        assert "SECRET_TOKEN" not in formatted_logs

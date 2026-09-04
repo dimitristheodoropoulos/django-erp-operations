@@ -165,8 +165,8 @@ later milestones.
 | ERP-REQ-041 | Business Errors              | Application/service architecture            | —             | `models.md` | —                               | `apps/orders/exceptions.py` order-domain exception hierarchy; `apps/api/exceptions.py::custom_exception_handler` business-error mappings | `tests/api/test_error_handling.py` business-error contract tests; lifecycle API error tests | Controlled business-rule errors are mapped to explicit API error codes/messages and exercised by automated tests; no requirement for a single cross-domain exception hierarchy is claimed | VERIFIED    |
 | ERP-REQ-042 | Consistent API Errors        | `api.md` / API error design                 | —             | —           | —                               | `apps/api/exceptions.py::custom_exception_handler` centralized API error handling | `tests/api/test_error_handling.py` consistent envelope tests; `tests/api/test_orders.py`; webhook API error tests | Validation, business-rule, integration and unexpected failures use the common top-level `error` envelope with distinguishable error codes | VERIFIED    |
 | ERP-REQ-043 | Unexpected Errors            | Application/API architecture                | —             | —           | —                               | `apps/api/exceptions.py::custom_exception_handler` centralized DRF exception handler | `tests/api/test_error_handling.py::test_unexpected_error_contract_is_safe`; `test_unexpected_errors_are_logged` | Unexpected exceptions return a safe generic 500 response without internal exception details; controlled unexpected-error logging is exercised by regression tests | VERIFIED    |
-| ERP-REQ-044 | Application Logging          | Application architecture                    | —             | —           | —                               | `config/settings.py::LOGGING`; application loggers in order, integration and API exception services | `tests/api/test_error_handling.py` logging tests; full API regression | Structured application logging covers order transitions, inventory changes, webhook processing and unexpected application errors; request-failure and migration-failure logging remain incompletely evidenced | PARTIAL     |
-| ERP-REQ-045 | Sensitive Information        | Application/configuration architecture      | —             | —           | —                               | `config/settings.py::LOGGING` application formatter configuration | `tests/api/test_error_handling.py::TestSensitiveInformation` | Configured log formatter does not render sensitive structured fields and regression tests verify password, API-key, token and credential values are not exposed; no universal sanitizer for secrets embedded directly in log messages is claimed | PARTIAL     |
+| ERP-REQ-044 | Application Logging          | Application architecture                    | —             | —           | —                               | `config/settings.py::LOGGING`; application loggers in order, integration and API exception services; `apps/api/exceptions.py::_log_request_failure`; `apps/customers/services.py` migration failure logging | `tests/api/test_error_handling.py` M4 request-failure, business-failure, authentication, permission, migration-failure and sensitive-operational logging tests; full regression | Structured application logging covers request failures, order transitions, inventory changes, webhook processing, migration failures and unexpected application errors; M4 targeted suite passed 18/18 and full regression passed 188/188 | VERIFIED    |
+| ERP-REQ-045 | Sensitive Information        | Application/configuration architecture      | —             | —           | —                               | `config/settings.py::LOGGING` application formatter configuration; safe structured logging in `apps/api/exceptions.py` and `apps/customers/services.py` | `tests/api/test_error_handling.py` sensitive-information and sensitive-operational logging tests | Structured logging avoids rendering sensitive request data and sensitive structured fields; M4 tests verify sensitive values are not exposed through the covered logging paths. No universal sanitizer for secrets explicitly embedded directly in arbitrary log messages is claimed | PARTIAL     |
 | ERP-REQ-046 | Automated Testing            | `development.md`                            | —             | —           | —                               | Pytest test suite                                                                                             | Repeated full-project regression suites                                                                                                                                                                                                                                                                                                         | Pytest suite and repeated full regressions provide executable evidence                                                                                                                                                    | VERIFIED    |
 | ERP-REQ-047 | Business Logic Testing       | `development.md` / test strategy            | —             | —           | —                               | Domain services and tests                                                                                     | Confirmation, lifecycle and webhook tests                                                                                                                                                                                                                                                                                                       | Business logic is covered by dedicated executable tests                                                                                                                                                                   | VERIFIED    |
 | ERP-REQ-048 | Inventory Testing            | `development.md` / test strategy            | —             | `models.md` | —                               | Inventory and order confirmation workflows                                                                    | Inventory/model/confirmation/lifecycle tests                                                                                                                                                                                                                                                                                                    | Includes atomicity and concurrency evidence; broader concurrent scenarios remain limited                                                                                                                                  | VERIFIED    |
@@ -202,10 +202,10 @@ Milestones 2A–2E and the Milestone 2F error-handling/logging enhancements have
 The requirement-specific verification state is:
 
 ```text
-VERIFIED     : 33
+VERIFIED     : 34
 TESTED       : 15
 IMPLEMENTED  : 8
-PARTIAL      : 2
+PARTIAL      : 1
 DESIGNED     : 4
 PENDING      : 8
 TOTAL        : 70
@@ -217,21 +217,17 @@ Milestone evidence currently establishes:
 * 2C: executable sales-order lifecycle services
 * 2D: REST API exposure of the lifecycle services
 * 2E: payment webhook integration foundation
-* 2F: centralized error handling, structured logging, and sensitive-information protection (partial)
+* 2F: centralized error handling and comprehensive structured logging (with sensitive‑information protection partial)
 
 The current implementation and verification boundary does **not** establish
 the following as complete:
 
-* legacy customer migration
-* migration validation, transformation, and reporting
-* complete application logging infrastructure (request-failure and migration-failure logging remain gaps)
 * explicit sensitive-information protection for all log sources (no universal sanitizer)
 * concurrent first-delivery webhook idempotency race handling
 * complete environment separation
 * complete application containerization
 * complete reproducible developer setup
-* CI implementation and failure-path verification
-* complete development documentation
+* CI failure-path verification
 * real external payment-provider integration
 * production carrier or fulfillment integration
 * production deployment validation
@@ -641,10 +637,10 @@ Current status distribution:
 
 | Status      |  Count |
 | ----------- | -----: |
-| VERIFIED    |     33 |
+| VERIFIED    |     34 |
 | TESTED      |     15 |
 | IMPLEMENTED |      8 |
-| PARTIAL     |      2 |
+| PARTIAL     |      1 |
 | DESIGNED    |      4 |
 | PENDING     |      8 |
 | **TOTAL**   | **70** |
@@ -659,10 +655,10 @@ maintained independently.
 The current matrix therefore represents:
 
 ```text
-33 VERIFIED
+34 VERIFIED
 15 TESTED
  8 IMPLEMENTED
- 2 PARTIAL
+ 1 PARTIAL
  4 DESIGNED
  8 PENDING
 ----------------
@@ -777,33 +773,37 @@ It does not establish:
 ```text
 Dedicated error/logging test suite:
 
-12 passed
+18 passed
 
 Full project regression:
 
-157 passed
+188 passed
 
 Key evidence:
 - Centralized exception handler maps business/validation/unexpected errors
-- Structured logging for order transitions, inventory changes, webhook events
-- Unexpected errors are logged with safe event envelope
-- Sensitive fields are not rendered by the log formatter
+- Structured request-failure logging covers validation, authentication,
+  permission and business failures
+- Structured logging covers order transitions, inventory changes,
+  webhook processing and unexpected application errors
+- Operational customer migration failures are logged separately from
+  validation rejections
+- Sensitive structured fields are not rendered by the log formatter
+- Unexpected API errors return a safe generic 500 response
 
 Commit:
 
-(working tree, not yet committed)
+c695b2e Implement M4 request failure logging
 ```
 
-The 2F evidence establishes the centralized error handling and logging foundation within scope.
+The 2F evidence establishes the centralized exception-handling and
+structured application-logging foundation within the current requirement scope.
 
 It does not establish:
 
-- complete request-failure logging coverage
-- migration-failure logging
-- a universal sanitizer for secrets embedded in log messages
-- production-grade monitoring/alerting
-- full environment separation
-- CI-based logging verification
+* a universal sanitizer for secrets embedded directly in arbitrary log messages
+* production-grade monitoring or alerting
+* full environment separation
+* CI-based logging verification
 
 ### Future evidence requirements
 
@@ -860,6 +860,7 @@ procedures.
 | 2026-09-03 | Traceability statuses synchronized with the authoritative reconciliation    | Working tree              |
 | 2026-09-03 | Traceability narrative synchronized with the current verification boundary  | Working tree              |
 | 2026-09-03 | Milestone 2F error-handling/logging reconciliation integrated               | Working tree              |
+| 2026-09-04 | M4 request‑failure logging reconciliation                                   | `c695b2e`                 |
 
 ---
 
