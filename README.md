@@ -1,23 +1,14 @@
 # Django ERP Operations
 
-A production-oriented Django ERP portfolio project focused on
-operational business workflows, relational data modelling,
-order lifecycle management, REST APIs, automated testing,
-Dockerized development, and CI.
+A production-oriented Django ERP portfolio project focused on operational business workflows, relational data modelling, order lifecycle management, REST APIs, automated testing, Dockerized development, and CI.
 
 ## Project Overview
 
-This project demonstrates how a business-oriented ERP backend can
-be designed and implemented using Python and Django.
+This project demonstrates how a business-oriented ERP backend can be designed and implemented using Python and Django.
 
-The focus is not simply on CRUD functionality, but on separating
-domain models, business rules, transactional services, API
-interfaces, permissions, error handling, testing, and development
-infrastructure.
+The focus is not simply on CRUD functionality, but on separating domain models, business rules, transactional services, API interfaces, permissions, error handling, testing, and development infrastructure.
 
-The project is developed incrementally through requirement-driven
-milestones, with implementation and verification evidence maintained
-alongside the codebase.
+The project is developed incrementally through requirement-driven milestones, with implementation and verification evidence maintained alongside the codebase.
 
 ## Tech Stack
 
@@ -59,29 +50,34 @@ alongside the codebase.
 - Django migrations
 - Migration consistency verification
 - Transactional database operations
+- Database-level constraints and referential integrity
 
 ### Testing and Verification
 
-The project uses automated testing as part of the development
-workflow.
+The project uses automated testing as part of the development workflow.
 
-The current containerized environment has been verified with:
+The current containerized environment has been independently reproduced from a fresh GitHub clone and verified with:
 
 - Django system checks
 - Migration consistency checks
 - Python compilation checks
-- Full pytest regression
 - PostgreSQL-backed integration testing
+- Full pytest regression
 - GitHub Actions CI
 
-Current containerized regression:
+Current verified regression:
 
-**181 tests passed.**
+**188 tests passed, 0 failed.**
+
+The reproducibility verification was performed from the GitHub repository at the verified baseline commit:
+
+`3c821c061b6fc07c8a2abc20e3276b49b84d26d3`
+
+The clean environment used PostgreSQL 16 and a fresh database volume.
 
 ## Architecture
 
-The application follows a layered approach that keeps HTTP concerns
-separate from business logic.
+The application follows a layered approach that keeps HTTP concerns separate from business logic.
 
 ```text
 HTTP Request
@@ -103,15 +99,31 @@ Django ORM
      |
      v
 PostgreSQL
-````
+```
 
-This separation allows the same business rules to be exercised
-independently from the HTTP interface.
+This separation allows the same business rules to be exercised independently from the HTTP interface.
+
+## What This Demonstrates for ERP Development
+
+The project demonstrates practical engineering patterns that are directly relevant to ERP and operational business software:
+
+- Modelling relational business domains with Django ORM
+- Representing business workflows and lifecycle state transitions
+- Enforcing business rules at service and database boundaries
+- Building transactional operations around real business actions
+- Designing REST APIs over domain services
+- Handling permissions and structured API failures
+- Working with PostgreSQL relational data and constraints
+- Testing business behaviour and integration paths
+- Maintaining migrations and reproducible development environments
+- Using Docker and CI to validate the application consistently
+- Maintaining requirements traceability from specification to verification
+
+The project is intentionally focused on transferable ERP engineering concepts rather than on a specific ERP product.
 
 ## Development Environment
 
-The project provides both local and Docker-based development
-workflows.
+The project provides both local and Docker-based development workflows.
 
 The Docker environment includes:
 
@@ -122,17 +134,15 @@ Django application
    PostgreSQL 16
 ```
 
-Docker Compose provides the application and database services,
-including PostgreSQL health checks and Django startup/migration
-handling.
+Docker Compose provides the application and database services, including PostgreSQL health checks and Django startup/migration handling.
 
 See:
 
-* `docs/development.md`
-* `docs/architecture.md`
-* `docs/database.md`
-* `docs/api.md`
-* `docs/traceability.md`
+- `docs/development.md`
+- `docs/architecture.md`
+- `docs/database.md`
+- `docs/api.md`
+- `docs/traceability.md`
 
 ## CI
 
@@ -151,82 +161,48 @@ The CI pipeline currently performs:
 
 ## Requirements Traceability
 
-The project uses requirement-driven development and maintains
-traceability between requirements, implementation, documentation,
-and verification evidence.
+The project uses requirement-driven development and maintains traceability between requirements, implementation, documentation, and verification evidence.
 
 See:
 
 `docs/traceability.md`
 
+The current requirements baseline accounts for all 70 requirements, with verification status explicitly recorded rather than assuming implementation alone constitutes verification.
+
 ## Project Status
 
-This is an active portfolio engineering project under incremental
-development.
+This is an active portfolio engineering project under incremental development.
 
-Completed milestones represent implemented and verified functionality.
-Additional functionality is intentionally developed in subsequent
-milestones rather than being presented as already complete.
+Completed milestones represent implemented and verified functionality. Additional functionality is intentionally developed in subsequent milestones rather than being presented as already complete.
 
 ## Scope
 
-The project currently focuses on backend ERP operations and software
-engineering practices.
+The project currently focuses on backend ERP operations and software engineering practices.
 
 It does not claim:
 
-* Production deployment validation
-* Physical hardware validation
-* Production ERP customer deployment
-* Odoo implementation
-* Functional-safety certification
-* Large-scale production load validation
+- Production deployment validation
+- Physical hardware validation
+- Production ERP customer deployment
+- Odoo implementation
+- Functional-safety certification
+- Large-scale production load validation
 
 ## Why This Project
 
-The project is designed to demonstrate practical engineering skills
-relevant to business and ERP software development:
+The project is designed to demonstrate practical engineering skills relevant to business and ERP software development:
 
-* Python
-* Django
-* Django ORM
-* PostgreSQL
-* REST APIs
-* Business logic
-* Transactions
-* Permissions
-* Error handling
-* Automated testing
-* Docker
-* CI/CD
-* Git
-* Requirement traceability
-  EOF
-
-````
-
-### Βήμα 2 — Δημιούργησε το LICENSE
-
-```bash
-cat > LICENSE <<'EOF'
-MIT License
-
-Copyright (c) 2026 Dimitris Theodoropoulos
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+- Python
+- Django
+- Django ORM
+- PostgreSQL
+- REST APIs
+- Business logic
+- Transactions
+- Permissions
+- Error handling
+- Automated testing
+- Docker
+- CI/CD
+- Git
+- Requirement traceability
