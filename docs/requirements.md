@@ -1260,7 +1260,7 @@ The current reconciliation covers all 70 requirements.
 | ERP-REQ-067 | Development Documentation | VERIFIED | `docs/development.md` | Development guide documents setup, environment configuration, PostgreSQL, migrations, checks, tests, compilation, Docker workflow and management commands |
 | ERP-REQ-068 | Version Control | VERIFIED | Git repository and milestone history | No material gap within current scope |
 | ERP-REQ-069 | Meaningful Commits | VERIFIED | Meaningful milestone commits with purpose-specific messages | No material gap within current scope |
-| ERP-REQ-070 | Reproducibility | PENDING | Git, migrations, `pyproject.toml`, `.env.example` and PostgreSQL Compose infrastructure | Dockerized build/startup, PostgreSQL initialization, migrations, Django checks, compilation, and full test execution are reproducible in the current environment; a fresh clean-checkout/end-to-end reproduction has not yet been independently demonstrated |
+| ERP-REQ-070 | Reproducibility | VERIFIED | Git, migrations, `pyproject.toml`, `.env.example` and PostgreSQL Compose infrastructure + fresh GitHub clone reproducibility verification | Fresh clone from the GitHub repository at commit `3c821c061b6fc07c8a2abc20e3276b49b84d26d3` was built in a clean Docker environment with PostgreSQL 16 and a fresh database volume; migrations applied with no pending changes, Django system checks passed, Python sources compiled successfully, and the full pytest regression passed with 188 passed and 0 failed |
 
 ## 30.3 Milestone scope and regression evidence
 
