@@ -52,6 +52,14 @@ The project is developed incrementally through requirement-driven milestones, wi
 - Transactional database operations
 - Database-level constraints and referential integrity
 
+### Integrations
+
+- Payment webhook endpoint
+- Durable webhook event persistence
+- Idempotent duplicate-delivery handling
+- Concurrency protection for concurrent first deliveries
+- Validation and structured failure handling
+
 ### Testing and Verification
 
 The project uses automated testing as part of the development workflow.
@@ -67,11 +75,11 @@ The current containerized environment has been independently reproduced from a f
 
 Current verified regression:
 
-**188 tests passed, 0 failed.**
+**190 tests passed, 0 failed.**
 
 The reproducibility verification was performed from the GitHub repository at the verified baseline commit:
 
-`3c821c061b6fc07c8a2abc20e3276b49b84d26d3`
+`c1a570f`
 
 The clean environment used PostgreSQL 16 and a fresh database volume.
 
@@ -112,6 +120,8 @@ The project demonstrates practical engineering patterns that are directly releva
 - Enforcing business rules at service and database boundaries
 - Building transactional operations around real business actions
 - Designing REST APIs over domain services
+- Designing webhook-based integration boundaries
+- Handling duplicate and concurrent external events safely
 - Handling permissions and structured API failures
 - Working with PostgreSQL relational data and constraints
 - Testing business behaviour and integration paths
