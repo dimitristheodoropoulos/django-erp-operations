@@ -1,14 +1,14 @@
-# Milestones 2A → 2E Reconciliation
+# Milestones 2A → 2F Reconciliation
 
 ## 1. Executive Status
 
 Status: COMPLETE
 
 This document reconciles the engineering work completed across Milestones
-2A through 2E against the ERP requirements baseline.
+2A through 2F against the ERP requirements baseline.
 
-The purpose is to establish an evidence-based current state before any
-synchronization of `docs/traceability.md` and before selecting Milestone 2F.
+The purpose is to establish and document the evidence-based current state
+across Milestones 2A–2F and synchronize the controlled requirement records.
 
 The reconciliation follows:
 
@@ -362,16 +362,18 @@ The service also checks existing events using:
 
     select_for_update()
 
-The current milestone does not claim complete concurrent first-delivery
-race testing or production-grade distributed idempotency semantics.
+The original Milestone 2E implementation did not include concurrent
+first-delivery race testing. Later hardening (commit `1194a56`)
+added dedicated tests for known and unknown orders, achieving stable
+concurrent first-delivery behavior.
 
 ## Test evidence
 
-Dedicated webhook suite:
+Dedicated webhook suite (original 2E):
 
     8 passed
 
-Full regression:
+Full regression (2E):
 
     157 passed in 72.65s
 
@@ -399,33 +401,38 @@ Milestone 2E closes the current implementation/testing gap for:
 - ERP-REQ-033 Unknown Order Webhook
 - ERP-REQ-051 Webhook Testing
 
+Subsequent concurrency hardening (commit `1194a56`) further strengthened
+ERP-REQ-032 by adding concurrent first-delivery tests for both known and
+unknown orders. The status of ERP-REQ-032 remains TESTED because
+production-grade distributed webhook semantics are not established.
+
 ---
 
 # 8. Full Requirement Matrix — Current Reconciled State
 
 The following matrix represents the current engineering state after
-Milestones 2A through 2E and the Milestone 2F error-handling/logging enhancements.
+Milestones 2A through 2F, including the Milestone 2F error-handling/logging enhancements.
 
 The original `docs/traceability.md` is synchronized after this
 reconciliation has been independently audited.
 
 | Requirement | Area | Current state | Evidence / milestone | Remaining gap |
 |---|---|---|---|---|
-| ERP-REQ-001 | Customer Creation | TESTED | 2A/2B customer API tests | Full cross-domain verification not separately established |
-| ERP-REQ-002 | Customer Retrieval | TESTED | 2B customer API tests | Same |
-| ERP-REQ-003 | Customer Status | TESTED | 2B customer API tests | Same |
-| ERP-REQ-004 | Product Creation | IMPLEMENTED | Product model | Dedicated creation test |
+| ERP-REQ-001 | Customer Creation | VERIFIED | 2A/2B customer API tests | Full cross-domain verification not separately established |
+| ERP-REQ-002 | Customer Retrieval | VERIFIED | 2B customer API tests | Same |
+| ERP-REQ-003 | Customer Status | VERIFIED | 2B customer API tests | Same |
+| ERP-REQ-004 | Product Creation | VERIFIED | Product model | Dedicated creation test |
 | ERP-REQ-005 | Unique SKU | TESTED | Model integrity tests | Full verification chain |
-| ERP-REQ-006 | Product Validation | IMPLEMENTED | DB constraints | Dedicated validation tests |
+| ERP-REQ-006 | Product Validation | VERIFIED | DB constraints | Dedicated validation tests |
 | ERP-REQ-007 | Warehouse Management | TESTED | Model integrity tests | Full verification chain |
 | ERP-REQ-008 | Stock Representation | TESTED | Model integrity tests | Full verification chain |
 | ERP-REQ-009 | Stock Quantities | TESTED | Model integrity tests | Full verification chain |
 | ERP-REQ-010 | Stock Validation | TESTED | Model integrity tests | Full verification chain |
 | ERP-REQ-011 | Inventory Consistency | VERIFIED | Confirmation service + concurrency/atomicity tests | None within current scope |
-| ERP-REQ-012 | Sales Order Creation | IMPLEMENTED | SalesOrder model | Dedicated creation test |
+| ERP-REQ-012 | Sales Order Creation | VERIFIED | SalesOrder model | Dedicated creation test |
 | ERP-REQ-013 | Sales Order Lines | TESTED | Order confirmation tests | Dedicated broader line API evidence |
 | ERP-REQ-014 | Positive Quantities | TESTED | DB constraint test | Full verification chain |
-| ERP-REQ-015 | Price Snapshot | IMPLEMENTED | SalesOrderLine model | Dedicated snapshot test |
+| ERP-REQ-015 | Price Snapshot | VERIFIED | SalesOrderLine model | Dedicated snapshot test |
 | ERP-REQ-016 | Draft State | TESTED | Model integrity test | Full verification chain |
 | ERP-REQ-017 | Order Confirmation | VERIFIED | Confirmation service + tests | None within current scope |
 | ERP-REQ-018 | Stock Reservation | VERIFIED | Confirmation service + reservation/concurrency tests | None within current scope |
@@ -442,12 +449,12 @@ reconciliation has been independently audited.
 | ERP-REQ-029 | API Validation | TESTED | serializers + 2D/2E API error tests | No globally centralized unexpected-error contract |
 | ERP-REQ-030 | Payment Webhook | VERIFIED | 2E webhook implementation/tests | No real payment provider |
 | ERP-REQ-031 | Webhook Validation | VERIFIED | 2E serializer + invalid payload tests | No provider-specific schema/signature |
-| ERP-REQ-032 | Webhook Idempotency | TESTED | unique event ID + duplicate webhook test | Concurrent first-delivery race remains untested; unique-key race handling is not production-grade distributed idempotency |
+| ERP-REQ-032 | Webhook Idempotency | TESTED | unique event ID + duplicate webhook test + concurrent first-delivery tests for known and unknown orders | Concurrent first-delivery behavior is tested and stable; provider-specific and distributed production webhook semantics are not established |
 | ERP-REQ-033 | Unknown Order Webhook | VERIFIED | FAILED event + unknown-order test | No external retry/dead-letter policy |
-| ERP-REQ-034 | Legacy Customer Import | PENDING | Not in 2A–2E scope | Migration implementation |
-| ERP-REQ-035 | Migration Validation | PENDING | Not in 2A–2E scope | Migration validation |
-| ERP-REQ-036 | Data Transformation | PENDING | Not in 2A–2E scope | Transformation layer |
-| ERP-REQ-037 | Migration Report | PENDING | Not in 2A–2E scope | Migration reporting |
+| ERP-REQ-034 | Legacy Customer Import | VERIFIED | Customer import service + management command + 13 dedicated migration tests | Legacy customer CSV import is implemented and verified; no external ERP/Odoo source integration is claimed |
+| ERP-REQ-035 | Migration Validation | VERIFIED | `_validate_row()` + invalid-record tests | Legacy records are validated before insertion and invalid rows are rejected with diagnostics |
+| ERP-REQ-036 | Data Transformation | VERIFIED | `_transform_row()` + transformation test | Legacy CSV values are explicitly normalized into the application domain representation |
+| ERP-REQ-037 | Migration Report | VERIFIED | `CustomerImportReport` + management-command output tests | Processed/imported/rejected counts and row/field/message validation diagnostics are reported |
 | ERP-REQ-038 | Authentication | VERIFIED | DRF config + auth tests | Broader endpoint coverage |
 | ERP-REQ-039 | User Roles | VERIFIED | Roles migration + permission tests | Broader endpoint matrix |
 | ERP-REQ-040 | Permission Enforcement | TESTED | Customer API permission tests | Broader endpoint coverage |
@@ -462,25 +469,25 @@ reconciliation has been independently audited.
 | ERP-REQ-049 | Order Lifecycle Testing | VERIFIED | 2C lifecycle tests | No production integration |
 | ERP-REQ-050 | API Testing | VERIFIED | Customer, lifecycle and webhook API tests + full regressions | Endpoint-wide matrix can be expanded as future APIs are implemented |
 | ERP-REQ-051 | Webhook Testing | VERIFIED | 2E 8-case suite | No provider/HIL testing |
-| ERP-REQ-052 | Migration Testing | PENDING | Not implemented | Migration tests |
+| ERP-REQ-052 | Migration Testing | VERIFIED | 13 dedicated migration tests + full regression | Valid and invalid legacy customer records are covered by automated migration tests |
 | ERP-REQ-053 | PostgreSQL | IMPLEMENTED | PostgreSQL 16 runtime verification | Broader DB verification |
 | ERP-REQ-054 | Referential Integrity | IMPLEMENTED | Django relationships/migrations | Explicit schema verification |
 | ERP-REQ-055 | Database Constraints | IMPLEMENTED | Model constraints/migrations | Consolidated constraint audit |
 | ERP-REQ-056 | Environment Configuration | VERIFIED | `config/settings.py` reads environment variables for secret, debug, hosts and PostgreSQL settings | No material gap within current scope |
 | ERP-REQ-057 | Secret Management | VERIFIED | Tracked `.env.example` contains placeholders; secrets are environment-configured | No real secret-management backend is claimed |
 | ERP-REQ-058 | Environment Separation | DESIGNED | Configuration architecture | Explicit environment separation |
-| ERP-REQ-059 | Containerized Development | DESIGNED | `docker-compose.yml` provides PostgreSQL infrastructure | `Dockerfile` is empty; complete application containerization is not implemented |
-| ERP-REQ-060 | Database Container | IMPLEMENTED | PostgreSQL container healthy | Persistent deployment verification |
-| ERP-REQ-061 | Reproducible Environment | PENDING | `pyproject.toml` and PostgreSQL Compose infrastructure exist | No complete documented startup/test procedure; `Dockerfile` and `docs/development.md` are empty |
-| ERP-REQ-062 | CI Pipeline | DESIGNED | CI architecture | CI implementation/evidence |
-| ERP-REQ-063 | CI Failure Handling | DESIGNED | CI architecture | Failure-path verification |
+| ERP-REQ-059 | Containerized Development | VERIFIED | `Dockerfile`, `docker-compose.yml` + Docker verification | Dockerized Django application and PostgreSQL development environment build and start successfully; full regression passes in the container |
+| ERP-REQ-060 | Database Container | VERIFIED | PostgreSQL Compose service + healthcheck | PostgreSQL container reaches healthy state and the Django web service starts against it |
+| ERP-REQ-061 | Reproducible Environment | VERIFIED | `pyproject.toml`, `Dockerfile`, `docker-compose.yml`, `docs/development.md` + Docker verification | Documented local and Docker development procedures execute successfully, including startup, migrations, checks, compilation and tests |
+| ERP-REQ-062 | CI Pipeline | VERIFIED | `.github/workflows/ci.yml` + successful GitHub Actions CI run | CI provisions PostgreSQL 16, installs dependencies, migrates, checks, compiles and executes pytest successfully |
+| ERP-REQ-063 | CI Failure Handling | VERIFIED | `.github/workflows/ci.yml` + GitHub Actions failure-path run #6 | Temporary revision `2ff3f46` intentionally failed the required `pytest -q` step; GitHub Actions run #6 reported workflow status `Failure` with process exit code 1 |
 | ERP-REQ-064 | Architecture Documentation | VERIFIED | Substantive `docs/architecture.md` covering boundaries, components, transactions and design decisions | No material documentation gap within current scope |
 | ERP-REQ-065 | Database Documentation | VERIFIED | Substantive `docs/database.md` covering entities, relationships, constraints, transactions and migrations | No material documentation gap within current scope |
-| ERP-REQ-066 | API Documentation | VERIFIED | Substantive `docs/api.md` covering endpoints, schemas, validation, errors, lifecycle and integration design | Documentation contains stale pre-2D/2E implementation-status text and an obsolete webhook path; reconciliation update is required |
-| ERP-REQ-067 | Development Documentation | PENDING | `docs/development.md` exists but is empty | Complete developer setup, startup, migrations, tests and quality-check procedures required |
+| ERP-REQ-066 | API Documentation | VERIFIED | Substantive `docs/api.md` covering endpoints, schemas, validation, errors, lifecycle and integration design | No material documentation gap within current scope |
+| ERP-REQ-067 | Development Documentation | VERIFIED | `docs/development.md` | Development guide documents setup, environment configuration, PostgreSQL, migrations, checks, tests, compilation, Docker workflow and management commands |
 | ERP-REQ-068 | Version Control | VERIFIED | Git repository and milestone history | No material gap within current scope |
 | ERP-REQ-069 | Meaningful Commits | VERIFIED | Meaningful milestone commits with purpose-specific messages | No material gap within current scope |
-| ERP-REQ-070 | Reproducibility | PENDING | Git, migrations, `pyproject.toml`, `.env.example` and PostgreSQL Compose infrastructure | Clean-checkout end-to-end reproduction is not yet demonstrated; Dockerfile/development procedure are incomplete |
+| ERP-REQ-070 | Reproducibility | VERIFIED | Git, migrations, `pyproject.toml`, `.env.example` and PostgreSQL Compose infrastructure + fresh GitHub clone reproducibility verification | Fresh clone from the GitHub repository at commit `3c821c061b6fc07c8a2abc20e3276b49b84d26d3` was built in a clean Docker environment with PostgreSQL 16 and a fresh database volume; migrations applied with no pending changes, Django system checks passed, Python sources compiled successfully, and the full pytest regression passed with 188 passed and 0 failed |
 
 ---
 
@@ -557,8 +564,8 @@ The current project demonstrates the following engineering capabilities.
 | Automated testing | pytest + regression suites | Strong |
 | Git workflow | milestone commits/reconciliation | Strong |
 | Documentation/traceability | requirements + milestone evidence | Strong |
-| ETL/data migration | not implemented | Gap |
-| CI/CD | designed, not fully implemented | Gap |
+| ETL/data migration | implemented and verified for legacy customer CSV import | Verified within current scope |
+| CI/CD | implemented and verified through GitHub Actions | Verified within current scope |
 | Production observability | limited (partial) | Gap |
 | Real external payment provider | intentionally excluded | Gap by design |
 | Production deployment | not established | Gap |
@@ -573,27 +580,25 @@ The remaining gaps are not all equally important.
 
 ### 11.1 Data migration / ETL
 
-ERP-REQ-034 through ERP-REQ-037 and ERP-REQ-052 remain pending.
+ERP-REQ-034 through ERP-REQ-037 and ERP-REQ-052 are VERIFIED.
 
-This is a direct ERP-relevant capability gap:
+The implemented scope demonstrates legacy customer CSV migration through the
+customer migration service and management command, including validation,
+transformation, database import and migration reporting.
 
-    source data
-        ↓
-    transformation
-        ↓
-    validation
-        ↓
-    database import
-        ↓
-    reconciliation/report
+Broader external ERP/Odoo source integration and additional migration formats
+remain outside the current scope.
 
-### 11.2 CI/CD
+### 11.2 CI automation
 
-ERP-REQ-062 and ERP-REQ-063 remain DESIGNED.
+ERP-REQ-062 and ERP-REQ-063 are VERIFIED.
 
-The project has strong local regression evidence but does not yet have
-equivalent automated CI evidence covering the complete engineering
-workflow.
+GitHub Actions provides automated CI for dependency installation, PostgreSQL
+provisioning, migrations, Django checks, migration consistency, Python
+compilation and the full pytest regression, with verified failure-path
+behavior.
+
+Deployment/CD automation is not claimed as part of the current scope.
 
 ### 11.3 Application observability
 
@@ -614,20 +619,12 @@ messages is not yet implemented.
 
 ### 11.4 API contract completeness
 
-The project has meaningful API implementation, but the full requirement
-surface is not yet uniformly implemented and verified.
+The implemented Customer, Product, Inventory, Sales Order and payment webhook
+API surfaces have dedicated regression evidence within their stated scopes.
 
-In particular:
-
-- Product API
-- Inventory API
-- complete API documentation
-- global error contract
-- endpoint-wide permission matrix
-
-remain candidates for future work.
-
----
+Remaining API work is primarily expansion rather than closure of the current
+requirements baseline, including broader endpoint-wide permission coverage and
+additional API behavior as new endpoints are introduced.
 
 # 12. Explicit Exclusions
 
@@ -638,7 +635,6 @@ The following are not claimed by this reconciliation:
 - webhook signature verification
 - asynchronous webhook infrastructure
 - distributed retry/dead-letter infrastructure
-- concurrent first-delivery webhook race testing
 - carrier integration
 - physical warehouse validation
 - hardware-in-the-loop validation
@@ -646,49 +642,29 @@ The following are not claimed by this reconciliation:
 - functional-safety certification
 - production accounting
 - refunds/payment reconciliation
-- cell balancing or physical BMS functionality
 
 These exclusions are intentional scope boundaries, not hidden failures.
 
 ---
 
-# 13. Recommended Milestone 2F
+# 13. Recommended Next Milestone
 
-**Milestone 2F has been completed as the error-handling and logging enhancement milestone.**
+**Milestone 2F has been completed as the error-handling and logging enhancement
+milestone.**
 
-The work addressed requirements 041–045:
+The remaining requirement-level work is concentrated in explicit verification
+boundaries such as:
 
-- Centralized exception handler and error envelope (041, 042, 043)
-- Structured application logging (044 verified)
-- Sensitive information protection (045 partial)
+- ERP-REQ-045 — sensitive-information protection remains PARTIAL.
+- ERP-REQ-058 — environment separation remains DESIGNED.
+- Requirements that remain TESTED rather than VERIFIED, according to the
+  final three-way status audit.
+- Future expansion of already-verified capabilities, such as broader migration
+  formats, external ERP/Odoo integration, deployment automation or production
+  operational hardening, if these become explicit future requirements.
 
-Given the completion of 2F, the next milestone should focus on one of the
-remaining gaps:
-
-### Candidate A — ERP Data Migration / ETL
-
-Close:
-
-- ERP-REQ-034
-- ERP-REQ-035
-- ERP-REQ-036
-- ERP-REQ-037
-- ERP-REQ-052
-
-This would add a major ERP-specific capability that is currently absent.
-
-### Candidate B — CI / Operational Hardening
-
-Close:
-
-- ERP-REQ-062
-- ERP-REQ-063
-
-and strengthen:
-
-- ERP-REQ-050
-- ERP-REQ-061
-- ERP-REQ-070
+The next milestone should be selected only after the current reconciliation and
+three-way consistency audit are complete.
 
 ## Decision rule
 
@@ -699,27 +675,20 @@ has been audited and the current working tree is committed.
 
 # 14. Traceability Synchronization Decision
 
-The reconciliation audit has passed.
+The reconciliation audit is being finalized against the current repository
+state.
 
-`docs/traceability.md` has been synchronized with the audited
-Milestone 2A–2E and 2F reconciliation state.
+`docs/requirements.md`, `docs/milestones_2a_2e_reconciliation.md` and
+`docs/traceability.md` are the three controlled documents whose requirement
+identifiers and statuses will be mechanically compared.
 
-The requirement set is consistent across:
+The synchronization claim is finalized after the three-way audit confirms
+identifier and status agreement across all three controlled documents.
 
-- `docs/requirements.md`
-- `docs/milestones_2a_2e_reconciliation.md`
-- `docs/traceability.md`
-
-All 70 requirement identifiers are present in all three documents,
-and their recorded statuses match.
-
-Milestone 2F is now reconciled for requirements 041–045.
-REQ-044 is VERIFIED and REQ-045 remains PARTIAL because a universal
-sanitizer for secrets embedded directly in arbitrary log messages is not
-implemented. No additional Milestone 2F scope is implied by this
-synchronization.
-
----
+Milestone 2F is reconciled for requirements 041–045. REQ-044 is VERIFIED and
+REQ-045 remains PARTIAL because a universal sanitizer for secrets embedded
+directly in arbitrary log messages is not implemented. No additional Milestone
+2F scope is implied by this synchronization.
 
 # 15. Final Assessment
 

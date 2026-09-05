@@ -8,7 +8,7 @@
 
 **Model Specification Baseline:** `13d0a8d`
 
-**Last Updated:** 2026-09-04
+**Last Updated:** 2026-09-05
 
 ---
 
@@ -153,9 +153,9 @@ later milestones.
 | ERP-REQ-029 | API Validation               | `api.md` / API error design                 | —             | —           | —                               | DRF serializers and API error handling                                                                        | 2D/2E API error tests                                                                                                                                                                                                                                                                                                                           | Structured validation/business/integration error tests; no globally centralized unexpected-error contract                                                                                                                 | TESTED      |
 | ERP-REQ-030 | Payment Webhook              | Integration architecture                    | `database.md` | `models.md` | `integrations/0001_initial.py`  | `apps/api/integration_views.py::PaymentWebhookView`; `apps/integrations/services.py::process_payment_webhook` | `tests/integrations/test_payment_webhook.py`                                                                                                                                                                                                                                                                                                    | 8 dedicated webhook tests passed; full regression 157 passed; commit `0fb41d2`                                                                                                                                            | VERIFIED    |
 | ERP-REQ-031 | Webhook Validation           | Integration architecture                    | `database.md` | `models.md` | `integrations/0001_initial.py`  | `apps/api/serializers.py::PaymentWebhookSerializer`                                                           | `tests/integrations/test_payment_webhook.py` invalid-payload cases                                                                                                                                                                                                                                                                              | 8 dedicated webhook tests passed; full regression 157 passed                                                                                                                                                              | VERIFIED    |
-| ERP-REQ-032 | Webhook Idempotency          | Integration architecture                    | `database.md` | `models.md` | `integrations/0001_initial.py`  | `apps/integrations/services.py::process_payment_webhook`; unique external event ID                            | `tests/integrations/test_payment_webhook.py` duplicate-event test                                                                                                                                                                                                                                                                               | Duplicate webhook behavior tested; concurrent first-delivery race remains untested and production-grade distributed idempotency is not established                                                                        | TESTED      |
+| ERP-REQ-032 | Webhook Idempotency          | Integration architecture                    | `database.md` | `models.md` | `integrations/0001_initial.py`  | `apps/integrations/services.py::process_payment_webhook`; unique external event ID                            | `tests/integrations/test_payment_webhook.py` duplicate-event and concurrent first-delivery tests                                                                                                                                                                                                                                                | Duplicate delivery and concurrent first-delivery behavior are tested for known and unknown orders; repeated concurrency runs passed. Distributed production webhook semantics are not established | TESTED      |
 | ERP-REQ-033 | Unknown Order Webhook        | Integration architecture                    | `database.md` | `models.md` | `integrations/0001_initial.py`  | `apps/integrations/services.py::process_payment_webhook`                                                      | `tests/integrations/test_payment_webhook.py` unknown-order case                                                                                                                                                                                                                                                                                 | Unknown order persisted as FAILED event; 8 dedicated webhook tests passed                                                                                                                                                 | VERIFIED    |
-| ERP-REQ-034 | Legacy Customer Import | Integration / Migration design | — | — | — | `apps/customers/services.py::import_customers`; `apps/customers/management/commands/import_customers.py` | `tests/migrations/test_customer_import.py`; `tests/management/test_import_customers_command.py` | Legacy customer CSV files are imported through a Django management command delegating to the customer migration service; 13 dedicated migration tests and full regression pass | VERIFIED |
+| ERP-REQ-034 | Legacy Customer Import | Integration / Migration design | — | — | — | `apps/customers/services.py::import_customers`; `apps/customers/management/commands/import_customers.py` | `tests/migrations/test_customer_import.py`; `tests/management/test_import_customers_command.py` | Legacy customer CSV files are imported through a Django management command delegating to the customer migration service; 13 dedicated migration tests pass; current full regression also passes | VERIFIED |
 | ERP-REQ-035 | Migration Validation | Integration / Migration design | — | — | — | `apps/customers/services.py::_validate_row` | `tests/migrations/test_customer_import.py` invalid-record tests | Legacy records are explicitly validated before `Customer.objects.create()`; invalid rows are rejected and reported rather than silently inserted | VERIFIED |
 | ERP-REQ-036 | Data Transformation | Integration / Migration design | — | — | — | `apps/customers/services.py::_transform_row` | `tests/migrations/test_customer_import.py::test_customer_import_transforms_whitespace_and_empty_optional_values` | Transformation explicitly strips string values and converts empty optional values to `None`; behaviour is directly tested | VERIFIED |
 | ERP-REQ-037 | Migration Report | Integration / Migration design | — | — | — | `apps/customers/services.py::CustomerImportReport`; `apps/customers/management/commands/import_customers.py` | `tests/migrations/test_customer_import.py`; `tests/management/test_import_customers_command.py` | Migration reports processed, imported and rejected records plus row/field/message validation diagnostics | VERIFIED |
@@ -187,7 +187,7 @@ later milestones.
 | ERP-REQ-063 | CI Failure Handling          | Development/CI architecture                 | —             | —           | —                               | `.github/workflows/ci.yml`                                                                                     | —                                                                                                                                                                                                                                                                                                                                               | CI failure handling verified through temporary revision `2ff3f46`: the intentional failing test caused the GitHub Actions `Tests` step to terminate with exit code 1 and CI run #6 reported overall `Failure` (run `33890770456`) | VERIFIED    |
 | ERP-REQ-064 | Architecture Documentation   | `architecture.md`                           | —             | —           | —                               | —                                                                                                             | —                                                                                                                                                                                                                                                                                                                                               | Substantive `docs/architecture.md` covering boundaries, components, transactions and design decisions                                                                                                                     | VERIFIED    |
 | ERP-REQ-065 | Database Documentation       | `database.md`                               | `database.md` | —           | —                               | —                                                                                                             | —                                                                                                                                                                                                                                                                                                                                               | Substantive `docs/database.md` covering entities, relationships, constraints, transactions and migrations                                                                                                                 | VERIFIED    |
-| ERP-REQ-066 | API Documentation            | `api.md`                                    | —             | —           | —                               | —                                                                                                             | —                                                                                                                                                                                                                                                                                                                                               | Substantive `docs/api.md` covering endpoints, schemas, validation, errors, lifecycle and integration design; stale pre-2D/2E implementation-status text and an obsolete webhook path require documentation reconciliation | VERIFIED    |
+| ERP-REQ-066 | API Documentation            | `api.md`                                    | —             | —           | —                               | —                                                                                                             | —                                                                                                                                                                                                                                                                                                                                               | Substantive `docs/api.md` covering endpoints, schemas, validation, errors, lifecycle and integration design; current API documentation reflects the implemented payment webhook endpoint and current API status | VERIFIED    |
 | ERP-REQ-067 | Development Documentation    | `development.md`                            | —             | —           | —                               | `docs/development.md`                                                                                          | —                                                                                                                                                                                                                                                                                                                                               | Development guide documents prerequisites, environment configuration, Python setup, PostgreSQL startup, migrations, Django checks, tests, compilation checks, Docker workflow, logs, shutdown, reproducibility workflow, and management commands | VERIFIED    |
 | ERP-REQ-068 | Version Control              | Development documentation                   | —             | —           | —                               | Git                                                                                                           | —                                                                                                                                                                                                                                                                                                                                               | Git repository and milestone history                                                                                                                                                                                      | VERIFIED    |
 | ERP-REQ-069 | Meaningful Commits           | Development documentation                   | —             | —           | —                               | Git                                                                                                           | —                                                                                                                                                                                                                                                                                                                                               | Meaningful milestone commits with purpose-specific messages                                                                                                                                                               | VERIFIED    |
@@ -197,17 +197,17 @@ later milestones.
 
 ## 4. Current Verification Boundary
 
-Milestones 2A–2E and the Milestone 2F error-handling/logging enhancements have established the current verification boundary.
+Milestones 2A–2F have established the current verification boundary, including the Milestone 2F error-handling/logging enhancements.
 
 The requirement-specific verification state is:
 
 ```text
-VERIFIED     : 34
-TESTED       : 15
-IMPLEMENTED  : 8
+VERIFIED     : 53
+TESTED       : 12
+IMPLEMENTED  : 3
 PARTIAL      : 1
-DESIGNED     : 4
-PENDING      : 8
+DESIGNED     : 1
+PENDING      : 0
 TOTAL        : 70
 ```
 
@@ -223,7 +223,6 @@ The current implementation and verification boundary does **not** establish
 the following as complete:
 
 * explicit sensitive-information protection for all log sources (no universal sanitizer)
-* concurrent first-delivery webhook idempotency race handling
 * complete environment separation
 * complete application containerization
 * complete reproducible developer setup
@@ -637,15 +636,15 @@ Current status distribution:
 
 | Status      |  Count |
 | ----------- | -----: |
-| VERIFIED    |     34 |
-| TESTED      |     15 |
-| IMPLEMENTED |      8 |
+| VERIFIED    |     53 |
+| TESTED      |     12 |
+| IMPLEMENTED |      3 |
 | PARTIAL     |      1 |
-| DESIGNED    |      4 |
-| PENDING     |      8 |
+| DESIGNED    |      1 |
+| PENDING     |      0 |
 | **TOTAL**   | **70** |
 
-The status distribution is the result of the Milestone 2A–2E and 2F reconciliation.
+The status distribution is the result of the reconciled Milestone 2A–2F verification state.
 
 The authoritative state is the individual requirement row.
 
@@ -655,12 +654,12 @@ maintained independently.
 The current matrix therefore represents:
 
 ```text
-34 VERIFIED
-15 TESTED
- 8 IMPLEMENTED
+53 VERIFIED
+12 TESTED
+ 3 IMPLEMENTED
  1 PARTIAL
- 4 DESIGNED
- 8 PENDING
+ 1 DESIGNED
+ 0 PENDING
 ----------------
 70 REQUIREMENTS
 ```
@@ -762,7 +761,6 @@ It does not establish:
 * retry/dead-letter infrastructure
 * asynchronous processing
 * monitoring/alerting
-* concurrent first-delivery race verification
 * payment reconciliation
 * refunds
 * payment-driven order lifecycle transitions

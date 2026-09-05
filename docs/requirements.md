@@ -4,7 +4,7 @@
 **Project:** Django ERP Operations Platform  
 **Version:** 1.0  
 **Status:** Approved for Implementation  
-**Last Updated:** 2026-09-02
+**Last Updated:** 2026-09-05
 
 ---
 
@@ -152,7 +152,7 @@ StockItem
     | N:1
     v
 Warehouse
-````
+```
 
 External integration events SHALL be represented independently so that webhook processing can be tracked and made idempotent.
 
@@ -1167,11 +1167,11 @@ The primary objective is to demonstrate a maintainable, testable, reliable and p
 # 30. Requirement Verification Reconciliation
 
 This section is the current requirement-verification reconciliation for
-Milestones 2A through 2E.
+Milestones 2A through 2F.
 
 It supersedes the historical Milestone 2B verification snapshot previously
 recorded in this section. The current state is based on the audited repository
-evidence recorded in `docs/milestones_2a_2e_reconciliation.md`.
+evidence recorded in the milestone reconciliation and current traceability evidence.
 
 ## 30.1 Current verification status
 
@@ -1179,33 +1179,33 @@ The current reconciliation covers all 70 requirements.
 
 | Status | Count |
 |---|---:|
-| VERIFIED | 30 |
-| TESTED | 15 |
-| IMPLEMENTED | 8 |
-| PARTIAL | 2 |
-| DESIGNED | 4 |
-| PENDING | 11 |
+| VERIFIED | 53 |
+| TESTED | 12 |
+| IMPLEMENTED | 3 |
+| PARTIAL | 1 |
+| DESIGNED | 1 |
+| PENDING | 0 |
 | **Total** | **70** |
 
 ## 30.2 Audited requirement matrix
 
 | Requirement | Area | Current state | Evidence / milestone | Remaining gap |
 |---|---|---|---|---|
-| ERP-REQ-001 | Customer Creation | TESTED | 2A/2B customer API tests | Full cross-domain verification not separately established |
-| ERP-REQ-002 | Customer Retrieval | TESTED | 2B customer API tests | Same |
-| ERP-REQ-003 | Customer Status | TESTED | 2B customer API tests | Same |
-| ERP-REQ-004 | Product Creation | IMPLEMENTED | Product model | Dedicated creation test |
+| ERP-REQ-001 | Customer Creation | VERIFIED | 2A/2B customer API tests + current full regression | Verification reproduced within the implemented customer API scope |
+| ERP-REQ-002 | Customer Retrieval | VERIFIED | 2B customer API tests + current full regression | Verification reproduced within the implemented customer API scope |
+| ERP-REQ-003 | Customer Status | VERIFIED | 2B customer API tests + current full regression | Verification reproduced within the implemented customer API scope |
+| ERP-REQ-004 | Product Creation | VERIFIED | Product REST API implementation + dedicated creation test + current full regression | Verification reproduced within the implemented product API scope |
 | ERP-REQ-005 | Unique SKU | TESTED | Model integrity tests | Full verification chain |
-| ERP-REQ-006 | Product Validation | IMPLEMENTED | DB constraints | Dedicated validation tests |
+| ERP-REQ-006 | Product Validation | VERIFIED | Product validation tests + current full regression | Verification reproduced within the implemented product API scope |
 | ERP-REQ-007 | Warehouse Management | TESTED | Model integrity tests | Full verification chain |
 | ERP-REQ-008 | Stock Representation | TESTED | Model integrity tests | Full verification chain |
 | ERP-REQ-009 | Stock Quantities | TESTED | Model integrity tests | Full verification chain |
 | ERP-REQ-010 | Stock Validation | TESTED | Model integrity tests | Full verification chain |
 | ERP-REQ-011 | Inventory Consistency | VERIFIED | Confirmation service + concurrency/atomicity tests | None within current scope |
-| ERP-REQ-012 | Sales Order Creation | IMPLEMENTED | SalesOrder model | Dedicated creation test |
+| ERP-REQ-012 | Sales Order Creation | VERIFIED | Order API creation tests + current full regression | Verification reproduced within the implemented order API scope |
 | ERP-REQ-013 | Sales Order Lines | TESTED | Order confirmation tests | Dedicated broader line API evidence |
 | ERP-REQ-014 | Positive Quantities | TESTED | DB constraint test | Full verification chain |
-| ERP-REQ-015 | Price Snapshot | IMPLEMENTED | SalesOrderLine model | Dedicated snapshot test |
+| ERP-REQ-015 | Price Snapshot | VERIFIED | Order creation/snapshot tests + current full regression | Verification reproduced within the implemented order API scope |
 | ERP-REQ-016 | Draft State | TESTED | Model integrity test | Full verification chain |
 | ERP-REQ-017 | Order Confirmation | VERIFIED | Confirmation service + tests | None within current scope |
 | ERP-REQ-018 | Stock Reservation | VERIFIED | Confirmation service + reservation/concurrency tests | None within current scope |
@@ -1222,7 +1222,7 @@ The current reconciliation covers all 70 requirements.
 | ERP-REQ-029 | API Validation | TESTED | serializers + 2D/2E API error tests | No globally centralized unexpected-error contract |
 | ERP-REQ-030 | Payment Webhook | VERIFIED | 2E webhook implementation/tests | No real payment provider |
 | ERP-REQ-031 | Webhook Validation | VERIFIED | 2E serializer + invalid payload tests | No provider-specific schema/signature |
-| ERP-REQ-032 | Webhook Idempotency | TESTED | unique event ID + duplicate webhook test | Concurrent first-delivery race remains untested; unique-key race handling is not production-grade distributed idempotency |
+| ERP-REQ-032 | Webhook Idempotency | TESTED | unique event ID + duplicate webhook test + concurrent first-delivery tests for known and unknown orders | Concurrent first-delivery behavior is tested and stable; provider-specific and distributed production webhook semantics are not established |
 | ERP-REQ-033 | Unknown Order Webhook | VERIFIED | FAILED event + unknown-order test | No external retry/dead-letter policy |
 | ERP-REQ-034 | Legacy Customer Import | VERIFIED | Customer import service + management command + 13 dedicated migration tests | Legacy customer CSV import is implemented and verified; no external ERP/Odoo source integration is claimed |
 | ERP-REQ-035 | Migration Validation | VERIFIED | `_validate_row()` + invalid-record tests | Legacy records are validated before insertion and invalid rows are rejected with diagnostics |
@@ -1256,7 +1256,7 @@ The current reconciliation covers all 70 requirements.
 | ERP-REQ-063 | CI Failure Handling | VERIFIED | `.github/workflows/ci.yml` + GitHub Actions failure-path run #6 | Temporary revision `2ff3f46` intentionally failed the required `pytest -q` step; GitHub Actions run #6 reported workflow status `Failure` with process exit code 1 |
 | ERP-REQ-064 | Architecture Documentation | VERIFIED | Substantive `docs/architecture.md` covering boundaries, components, transactions and design decisions | No material documentation gap within current scope |
 | ERP-REQ-065 | Database Documentation | VERIFIED | Substantive `docs/database.md` covering entities, relationships, constraints, transactions and migrations | No material documentation gap within current scope |
-| ERP-REQ-066 | API Documentation | VERIFIED | Substantive `docs/api.md` covering endpoints, schemas, validation, errors, lifecycle and integration design | Documentation contains stale pre-2D/2E implementation-status text and an obsolete webhook path; reconciliation update is required |
+| ERP-REQ-066 | API Documentation | VERIFIED | Substantive `docs/api.md` covering endpoints, schemas, validation, errors, lifecycle and integration design | No material documentation gap within current scope |
 | ERP-REQ-067 | Development Documentation | VERIFIED | `docs/development.md` | Development guide documents setup, environment configuration, PostgreSQL, migrations, checks, tests, compilation, Docker workflow and management commands |
 | ERP-REQ-068 | Version Control | VERIFIED | Git repository and milestone history | No material gap within current scope |
 | ERP-REQ-069 | Meaningful Commits | VERIFIED | Meaningful milestone commits with purpose-specific messages | No material gap within current scope |
@@ -1264,15 +1264,16 @@ The current reconciliation covers all 70 requirements.
 
 ## 30.3 Milestone scope and regression evidence
 
-The reconciliation covers the implemented scope of Milestones 2A through 2E:
+The reconciliation covers the implemented scope of Milestones 2A through 2F:
 
 - Milestone 2A: domain and order workflow foundation.
 - Milestone 2B: REST API foundation and API verification.
 - Milestone 2C: sales-order lifecycle services.
 - Milestone 2D: sales-order lifecycle REST API.
 - Milestone 2E: external payment webhook integration foundation.
+- Milestone 2F: centralized error handling and structured application logging.
 
-Current Milestone 2E baseline:
+Historical Milestone 2E baseline evidence:
 
 - Git commit: `0fb41d2`
 - Dedicated payment webhook suite: 8 passed.
@@ -1281,37 +1282,58 @@ Current Milestone 2E baseline:
 - Python compilation checks passed.
 - `git diff --check` clean.
 
+Current post-2F verification evidence:
+
+- Branch: `feature/webhook-concurrency-hardening`
+- Current HEAD: `1194a56`
+- Full regression: 188 passed, 0 failed.
+- API regression: 120 passed, 0 failed.
+- Dedicated webhook regression: 8 passed, 0 failed.
+- Django system check: clean.
+- Migration consistency check: no changes detected.
+
+Historical milestone counts are preserved for provenance and are not treated as
+the current repository regression baseline.
+
 The reconciliation distinguishes implemented behavior from independently tested
-or verified behavior. Requirements marked PARTIAL or PENDING retain explicit
-remaining gaps and are not treated as completed implementation scope.
+or verified behavior. Requirements marked PARTIAL or DESIGNED retain explicit
+remaining boundaries and are not treated as fully verified implementation scope.
 
-## 30.4 Known remaining cross-cutting gaps
+## 30.4 Known remaining verification boundaries
 
-The current audit identifies the following cross-cutting gaps that remain
-outside the completed 2A-2E verification baseline:
+The current audit identifies explicit verification boundaries in the current
+requirement matrix.
 
-- Unified cross-domain business-error taxonomy.
-- Unified API error envelope across validation, business-rule, and integration
-  failures.
-- Global unexpected-exception handling.
-- Structured application logging.
-- Explicit sensitive-information protection and verification at
-  logging/application boundaries.
+Requirements marked TESTED retain their documented evidence boundary and are
+not promoted to VERIFIED merely because they participate in a successful
+regression.
 
-These gaps are intentionally retained as requirements work rather than being
-implicitly marked complete by the existence of individual endpoint
-implementations.
+ERP-REQ-045 remains PARTIAL because the covered logging paths protect
+sensitive structured values, but no universal sanitizer prevents secrets
+explicitly embedded directly in arbitrary log messages.
+
+ERP-REQ-058 remains DESIGNED because explicit environment separation has not
+yet been established.
+
+Other limitations such as real payment-provider integration, provider-specific
+webhook security, production deployment, production observability, and broader
+external-system integration remain intentional scope boundaries where stated
+by the requirements and milestone documentation.
 
 ## 30.5 Reconciliation authority and traceability
 
-`docs/milestones_2a_2e_reconciliation.md` is the audited 2A-2E reconciliation
+`docs/requirements.md`, `docs/milestones_2a_2e_reconciliation.md` and
+`docs/traceability.md` are the three controlled documents used for the current
+requirement reconciliation.
+
+They are intended to remain synchronized on the same 70 requirement
+identifiers, current statuses and verification boundary. Historical milestone
+evidence is preserved separately from the current repository baseline.
+
+The synchronization claim is finalized only after the mechanical three-way
+audit confirms identifier and status agreement across all three documents.
+
+
+
+`docs/milestones_2a_2e_reconciliation.md` is the audited 2A-2F reconciliation
 source used to establish the current status recorded here.
-
-`docs/traceability.md` is intentionally not synchronized by this update.
-Traceability synchronization is a separate controlled documentation step to be
-performed after this requirements reconciliation has passed its diff and
-consistency checks.
-
-The current regression and implementation state documented here must therefore
-be interpreted as the Milestone 2A-2E baseline only; it does not constitute
-Milestone 2F scope or implementation.

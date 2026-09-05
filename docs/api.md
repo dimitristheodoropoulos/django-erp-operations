@@ -1682,26 +1682,31 @@ It MAY be introduced later if an explicit requirement establishes the need.
 
 # 31. Webhook API Boundary
 
-External payment events belong to the `integrations` application.
-
-The conceptual endpoint is:
+The implemented endpoint is:
 
 ```http
-POST /api/v1/integrations/payment/webhook/
+POST /api/v1/webhooks/payment/
 ```
 
-The endpoint SHALL:
+The endpoint:
 
-1. receive external event data
-2. validate the external request
-3. identify the external event
-4. enforce event-id uniqueness/idempotency
-5. invoke the appropriate application service
-6. persist processing state atomically
+1. receives external event data
+2. validates the external request
+3. identifies the external event
+4. enforces event-id uniqueness/idempotency
+5. invokes the application service
+6. persists processing state atomically
 
-The webhook endpoint SHALL NOT directly modify order state in the HTTP handler.
+The webhook endpoint does not directly implement order business logic in the
+HTTP handler.
 
-The detailed webhook request schema, authentication/signature mechanism and event-processing service SHALL be specified as a separate integration milestone.
+The current implementation provides request validation, durable event
+persistence, duplicate-delivery handling, unknown-order failure handling,
+and concurrency protection for concurrent first deliveries.
+
+Provider-specific signature verification, asynchronous processing,
+distributed retry/dead-letter infrastructure, and real payment-provider
+integration remain outside the current scope.
 
 ---
 
@@ -2107,14 +2112,13 @@ The intended API v1 surface is summarized below. Endpoints are grouped by implem
 
 ## Future API Milestones (design‑only)
 
-| Domain       | Method | Endpoint                                | Purpose                     |
-| ------------ | ------ | --------------------------------------- | --------------------------- |
-| Orders       | POST   | `/api/v1/orders/{id}/ship/`             | Ship confirmed order        |
-| Orders       | POST   | `/api/v1/orders/{id}/complete/`         | Complete shipped order      |
-| Integrations | POST   | `/api/v1/integrations/payment/webhook/` | External payment event      |
-| (CSV Import) | POST   | (not yet specified)                     | Legacy customer import      |
+| Domain       | Method | Endpoint                        | Purpose                     |
+| ------------ | ------ | ------------------------------- | --------------------------- |
+| Orders       | POST   | `/api/v1/orders/{id}/ship/`     | Ship confirmed order        |
+| Orders       | POST   | `/api/v1/orders/{id}/complete/` | Complete shipped order      |
+| (CSV Import) | POST   | (not yet specified)             | Legacy customer import      |
 
-Endpoints listed in the Future API Milestones section are design‑only and SHALL NOT be implemented as part of the current v1 milestone. They require explicit service contracts, tests and verification evidence before implementation.
+Endpoints listed in the Future API Milestones section are design‑only and require explicit service contracts, tests and verification evidence before implementation.
 
 ---
 
@@ -2123,11 +2127,13 @@ Endpoints listed in the Future API Milestones section are design‑only and SHAL
 At the time of this document's creation:
 
 ```text
-API implementation:                    NOT STARTED
-API contract:                         DRAFT
+API implementation:                    IMPLEMENTED
+API contract:                         IMPLEMENTED
 Order confirmation application service: IMPLEMENTED
 Order confirmation service tests:       18 PASS
 Order confirmation requirements:        VERIFIED
+Payment webhook endpoint:              IMPLEMENTED
+Payment webhook integration tests:     PASS
 ```
 
 The currently verified service entry point is:
@@ -2320,6 +2326,7 @@ Only after approval SHALL API implementation begin.
 | 2026-09-02 | Initial API Specification Draft v1.0 created | Current design milestone |
 | 2026-09-02 | Revision 1 — tightened draft-order mutation semantics, clarified order creation, separated current v1 API scope from future lifecycle/integration milestones | API contract review      |
 | 2026-09-02 | API Specification v1.0 Revision 1 approved | Formal API design review |
+| 2026-09-05 | Webhook section updated to reflect implemented payment webhook; Future API table updated; Current status updated | Documentation reconciliation |
 
 ---
 
